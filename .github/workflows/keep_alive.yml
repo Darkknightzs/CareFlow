@@ -12,8 +12,7 @@ jobs:
     steps:
       - name: Ping Render Web Service
         run: |
-          # Replace URL with your exact Render URL once deployed if different
-          APP_URL="${{ secrets.RENDER_APP_URL || 'https://careflow.onrender.com' }}"
+          APP_URL="${{ secrets.RENDER_APP_URL || 'https://careflow-vkhv.onrender.com' }}"
           echo "Pinging $APP_URL to keep server awake..."
           curl -s -f -m 30 "$APP_URL/index.php" || curl -s -m 30 "$APP_URL" || true
           echo "Ping successful! Server is awake."

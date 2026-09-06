@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: careflow-queue
+    runtime: docker
+    plan: free
+    region: oregon
+    buildCommand: ""
+    startCommand: ""
+    envVars:
+      - key: DB_DRIVER
+        value: sqlite

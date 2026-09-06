@@ -2,7 +2,7 @@
 require_once '../config/db.php';
 
 if (!isset($_SESSION['user_logged_in'])) {
-    header("Location: lookup.php");
+    header("Location: login.php");
     exit;
 }
 

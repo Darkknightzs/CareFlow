@@ -68,18 +68,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include '../includes/header.php';
 ?>
 
-<div class="flex-1 flex flex-col justify-center items-center py-6 px-4 bg-slate-50">
-    <div class="w-full <?= $search_result ? 'max-w-2xl' : 'max-w-md' ?> bg-white border border-slate-200 p-5 md:p-7 rounded-2xl shadow-sm transition-all">
+<div class="w-full <?= $search_result ? 'max-w-2xl' : 'max-w-md' ?> mx-auto my-auto py-4">
+    <div class="glass-card p-6 md:p-8 rounded-[2rem] shadow-xl">
         
-        <div class="text-center mb-5">
-            <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Check Status</h2>
-            <p class="text-slate-500 text-xs font-medium mt-0.5">Track your live position in the queue</p>
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3 shadow-inner border border-transparent dark:border-slate-700">
+                <i class="ph ph-ticket text-2xl"></i>
+            </div>
+            <h2 class="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">Check Status</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">Track your live position and wait time in the queue</p>
         </div>
         
         <?php if ($error): ?>
-            <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-3.5 mb-5 rounded-r-lg text-xs font-bold flex items-center gap-2">
+            <div class="bg-red-50/80 border border-red-200 text-red-700 p-3 mb-5 rounded-xl flex items-start gap-2 text-xs animate-pulse-slow">
                 <i class="ph-fill ph-warning-circle text-lg text-red-500 flex-shrink-0"></i>
-                <p><?= htmlspecialchars($error) ?></p>
+                <p class="font-bold"><?= htmlspecialchars($error) ?></p>
             </div>
         <?php endif; ?>
 

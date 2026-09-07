@@ -19,10 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Known default credentials fallback mapping for zero-error foolproof deployment
     $default_accounts = [
-        'admin'     => ['pass' => 'admin123',   'name' => 'System Administrator', 'role' => 'Admin',        'doctor_id' => null],
-        'reception' => ['pass' => 'recept123',  'name' => 'Receptionist',         'role' => 'Receptionist', 'doctor_id' => null],
-        'dr.smith'  => ['pass' => 'smith123',   'name' => 'Dr. Smith',            'role' => 'Doctor',       'doctor_id' => 1],
-        'dr.andrew' => ['pass' => 'andrew123',  'name' => 'Dr. Andrew',           'role' => 'Doctor',       'doctor_id' => 2],
+        'admin'      => ['pass' => 'admin123',   'name' => 'System Administrator',  'role' => 'Admin',        'doctor_id' => null],
+        'reception'  => ['pass' => 'recept123',  'name' => 'Receptionist',          'role' => 'Receptionist', 'doctor_id' => null],
+        'dr.rajesh'  => ['pass' => 'rajesh123',  'name' => 'Dr. Rajesh Sharma',     'role' => 'Doctor',       'doctor_id' => 1],
+        'dr.ananya'  => ['pass' => 'ananya123',  'name' => 'Dr. Ananya Mukherjee',  'role' => 'Doctor',       'doctor_id' => 2],
+        'dr.vikram'  => ['pass' => 'vikram123',  'name' => 'Dr. Vikram Verma',      'role' => 'Doctor',       'doctor_id' => 3],
+        // Aliases for convenience
+        'dr.smith'   => ['pass' => 'smith123',   'name' => 'Dr. Rajesh Sharma',     'role' => 'Doctor',       'doctor_id' => 1],
+        'dr.andrew'  => ['pass' => 'andrew123',  'name' => 'Dr. Ananya Mukherjee',  'role' => 'Doctor',       'doctor_id' => 2],
     ];
 
     // Query database for user
@@ -136,8 +140,9 @@ include '../includes/header.php';
         <p class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px]">Demo Credentials:</p>
         <p class="mt-1"><strong class="text-slate-600 dark:text-slate-300">admin / admin123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Admin Dashboard)</span></p>
         <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">reception / recept123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Front Desk Check-in)</span></p>
-        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">dr.smith / smith123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(General OPD Doctor)</span></p>
-        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">dr.andrew / andrew123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Cardiology Doctor)</span></p>
+        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">dr.rajesh / rajesh123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Dr. Rajesh - General OPD)</span></p>
+        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">dr.ananya / ananya123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Dr. Ananya - Cardiology)</span></p>
+        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">dr.vikram / vikram123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Dr. Vikram - Orthopedics)</span></p>
     </div>
 </div>
 

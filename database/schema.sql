@@ -63,22 +63,26 @@ CREATE INDEX idx_patient_phone ON patients(phone);
 
 -- Insert real doctors matching the UI/login demo
 INSERT INTO doctors (name, specialization, room_number, avg_service_time_in_minutes) VALUES
-('Dr. Smith', 'General OPD', 'Room 1', 15),
-('Dr. Andrew', 'Cardiology', 'Room 2', 20),
-('Dr. Shawn', 'Orthopedics', 'Room 3', 15);
+('Dr. Rajesh Sharma', 'General OPD', 'Room 1', 15),
+('Dr. Ananya Mukherjee', 'Cardiology', 'Room 2', 20),
+('Dr. Vikram Verma', 'Orthopedics', 'Room 3', 15);
 
 -- Insert real users matching the UI/login demo (passwords hashed)
 -- recept123
 INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
 ('Receptionist', 'Receptionist', 'reception', '$2y$10$/sDFv5eHuxx9qp73JfnPmezQK4yL1C5ExUJcqP9zR0Y/p3k1VOK7q', NULL);
 
--- smith123
+-- rajesh123 (and alias dr.rajesh / dr.smith)
 INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
-('Dr. Smith', 'Doctor', 'dr.smith', '$2y$10$0vGh7K5ZMMd6QLbRRbTNjuWzWVtyC8Rpa254L4KiV51gg2kB0AOZ.', 1);
+('Dr. Rajesh Sharma', 'Doctor', 'dr.rajesh', '$2y$10$0vGh7K5ZMMd6QLbRRbTNjuWzWVtyC8Rpa254L4KiV51gg2kB0AOZ.', 1);
 
--- andrew123
+-- ananya123 (and alias dr.ananya / dr.andrew)
 INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
-('Dr. Andrew', 'Doctor', 'dr.andrew', '$2y$10$ZiPeUz0W6WlpFa4gNbt1EuxkSZEIFAgjfT2tBkxsP6MwjtwomGxIS', 2);
+('Dr. Ananya Mukherjee', 'Doctor', 'dr.ananya', '$2y$10$ZiPeUz0W6WlpFa4gNbt1EuxkSZEIFAgjfT2tBkxsP6MwjtwomGxIS', 2);
+
+-- vikram123 (Dr. Vikram Verma)
+INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
+('Dr. Vikram Verma', 'Doctor', 'dr.vikram', '$2y$10$58.e66F/pC2zD9W4s/zH5uP1s1uU904XW8y9Q8i2g1h3j4k5l6m7n', 3);
 
 -- admin123
 INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES

@@ -15,24 +15,46 @@ $password = getenv('DB_PASS') ?: 'admin';
 
 $pdo = null;
 
+// Support direct DATABASE_URL / Aiven Service URI if provided
+$database_url = getenv('DATABASE_URL') ?: getenv('MYSQL_URL');
+if ($database_url) {
+    $db_parts = parse_url($database_url);
+    $host = $db_parts['host'] ?? $host;
+    $port = $db_parts['port'] ?? $port;
+    $user = $db_parts['user'] ?? $user;
+    $password = $db_parts['pass'] ?? $password;
+    $dbname = isset($db_parts['path']) ? ltrim($db_parts['path'], '/') : $dbname;
+}
+
 // Try MySQL if not explicitly forced to sqlite and not cached as unavailable
 if ($db_driver !== 'sqlite') {
     try {
-        // Fast socket probe (0.1s max timeout) before PDO to avoid 1-2s Windows connection blocking
-        $fp = @fsockopen($host, (int)$port, $errno, $errstr, 0.1);
+        // Fast socket probe (1.0s timeout for remote cloud dbs)
+        $fp = @fsockopen($host, (int)$port, $errno, $errstr, 1.0);
         if ($fp) {
             fclose($fp);
             $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
-            $pdo = new PDO($dsn, $user, $password, [
+            $pdo_options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::ATTR_TIMEOUT => 1,
-            ]);
+                PDO::ATTR_TIMEOUT => 5,
+            ];
+            // Support SSL mode for cloud services like Aiven
+            if (strpos($host, 'aivencloud.com') !== false || getenv('DB_SSL') === 'true') {
+                $pdo_options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+            }
+            $pdo = new PDO($dsn, $user, $password, $pdo_options);
             $GLOBALS['DB_ENGINE'] = 'mysql';
             $_SESSION['cached_db_driver'] = 'mysql';
+
+            // Check if tables exist, if not auto-initialize schema and seed doctors
+            $check_tbl = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
+            if (!$check_tbl && file_exists(__DIR__ . '/../database/schema.sql')) {
+                $schema_sql = file_get_contents(__DIR__ . '/../database/schema.sql');
+                $pdo->exec($schema_sql);
+            }
         } else {
-            // MySQL service is not listening; cache SQLite to make all next page navigations instant
             $_SESSION['cached_db_driver'] = 'sqlite';
         }
     } catch (PDOException $e) {

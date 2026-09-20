@@ -24,7 +24,12 @@ CREATE TABLE doctors (
     name VARCHAR(100) NOT NULL,
     specialization VARCHAR(100) NOT NULL,
     room_number VARCHAR(20),
-    avg_service_time_in_minutes INT NOT NULL DEFAULT 15
+    avg_service_time_in_minutes INT NOT NULL DEFAULT 15,
+    working_start_time TIME NOT NULL DEFAULT '09:00:00',
+    working_end_time TIME NOT NULL DEFAULT '13:00:00',
+    evening_start_time TIME NULL DEFAULT '17:00:00',
+    evening_end_time TIME NULL DEFAULT '20:00:00',
+    booking_slot_percentage INT NOT NULL DEFAULT 70
 );
 
 -- Add foreign key now that doctors table exists
@@ -44,8 +49,11 @@ CREATE TABLE queue_tokens (
     token_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT,
     doctor_id INT,
-    token_number VARCHAR(20) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'Waiting', -- Status: Waiting, In-Progress, Completed, No-Show, Cancelled
+    token_number VARCHAR(20) NULL,
+    booking_ref VARCHAR(20) NULL,
+    booking_type VARCHAR(20) NOT NULL DEFAULT 'Walk-in', -- 'Walk-in' or 'Pre-Booked'
+    scheduled_time DATETIME NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Waiting', -- Status: Waiting, In-Progress, Completed, No-Show, Cancelled, Booked
     arrival_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     arrival_date DATE NOT NULL,
     service_start_time TIMESTAMP NULL,
@@ -60,6 +68,8 @@ CREATE TABLE queue_tokens (
 CREATE INDEX idx_queue_status ON queue_tokens(status);
 CREATE INDEX idx_queue_date ON queue_tokens(arrival_time);
 CREATE INDEX idx_patient_phone ON patients(phone);
+CREATE INDEX idx_booking_ref ON queue_tokens(booking_ref);
+CREATE INDEX idx_scheduled_time ON queue_tokens(scheduled_time);
 
 -- Insert real doctors matching the UI/login demo
 INSERT INTO doctors (name, specialization, room_number, avg_service_time_in_minutes) VALUES

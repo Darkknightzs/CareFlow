@@ -14,8 +14,9 @@ $stmt = $pdo->query("
     SELECT qt.*, d.specialization, d.room_number 
     FROM queue_tokens qt
     JOIN doctors d ON qt.doctor_id = d.doctor_id
-    WHERE DATE(qt.arrival_time) = CURRENT_DATE
-    ORDER BY qt.arrival_time ASC
+    WHERE (DATE(qt.arrival_time) = CURRENT_DATE OR qt.arrival_date = CURRENT_DATE)
+    AND qt.token_number IS NOT NULL
+    ORDER BY COALESCE(qt.scheduled_time, qt.arrival_time) ASC
 ");
 $all_tokens = $stmt->fetchAll();
 

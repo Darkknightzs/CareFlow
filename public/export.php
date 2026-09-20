@@ -11,13 +11,16 @@ if (!isset($_SESSION['user_logged_in']) || !in_array($_SESSION['user_role'], ['D
 // Prepare query to get all records for today (or all history if preferred)
 $stmt = $pdo->query("
     SELECT 
-        qt.token_number, 
+        COALESCE(qt.token_number, qt.booking_ref, 'N/A') as token_number, 
         p.name as patient_name,
         p.phone,
         p.age,
         p.gender,
         d.name as doctor_name,
         d.specialization as department,
+        qt.booking_type,
+        qt.booking_ref,
+        qt.scheduled_time,
         qt.arrival_time, 
         qt.service_start_time, 
         qt.service_end_time,
@@ -25,7 +28,7 @@ $stmt = $pdo->query("
     FROM queue_tokens qt
     JOIN doctors d ON qt.doctor_id = d.doctor_id
     JOIN patients p ON qt.patient_id = p.patient_id
-    ORDER BY qt.arrival_time ASC
+    ORDER BY COALESCE(qt.scheduled_time, qt.arrival_time) ASC
 ");
 
 $records = $stmt->fetchAll();
@@ -39,7 +42,10 @@ $output = fopen('php://output', 'w');
 
 // Output the column headings
 fputcsv($output, [
-    'Token No', 
+    'Token / Ref No', 
+    'Booking Type',
+    'Booking Ref',
+    'Scheduled Time',
     'Patient Name',
     'Phone',
     'Age',
@@ -61,6 +67,9 @@ foreach ($records as $row) {
     }
     fputcsv($output, [
         $row['token_number'],
+        $row['booking_type'] ?? 'Walk-in',
+        $row['booking_ref'] ?? 'N/A',
+        !empty($row['scheduled_time']) ? date('h:i A', strtotime($row['scheduled_time'])) : 'N/A',
         $row['patient_name'],
         $row['phone'],
         $row['age'],

@@ -9,7 +9,7 @@ function calculateDynamicWait($pdo, $doctor_id) {
     // 1. Get static average and waiting count
     $stmt = $pdo->prepare("
         SELECT d.avg_service_time_in_minutes, 
-        (SELECT COUNT(*) FROM queue_tokens qt WHERE qt.doctor_id = d.doctor_id AND qt.status = 'Waiting' AND DATE(qt.arrival_time) = CURRENT_DATE) as waiting_count
+        (SELECT COUNT(*) FROM queue_tokens qt WHERE qt.doctor_id = d.doctor_id AND qt.status = 'Waiting' AND (qt.arrival_date = CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE) AND qt.token_number IS NOT NULL) as waiting_count
         FROM doctors d WHERE d.doctor_id = ?
     ");
     $stmt->execute([$doctor_id]);
@@ -52,32 +52,174 @@ function calculateDynamicWait($pdo, $doctor_id) {
  * Generate a unique token number like CAR-001
  */
 function generateTokenNumber($pdo, $doctor_id, $specialization) {
-    $prefix = strtoupper(substr($specialization, 0, 3));
+    $prefix = strtoupper(substr($specialization ?? 'GEN', 0, 3));
     
-    // Get the count of tokens for today to determine the next number
-    $stmt = $pdo->prepare("SELECT COUNT(*) as token_count FROM queue_tokens WHERE DATE(arrival_time) = CURRENT_DATE AND doctor_id = ?");
+    // Find the maximum existing sequence number for this doctor and prefix today
+    $stmt = $pdo->prepare("
+        SELECT token_number 
+        FROM queue_tokens 
+        WHERE doctor_id = ? 
+        AND token_number IS NOT NULL
+        AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
+        ORDER BY token_id DESC
+    ");
     $stmt->execute([$doctor_id]);
-    $result = $stmt->fetch();
+    $all_existing = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
-    $next_number = (int)$result['token_count'] + 1;
+    $max_num = 0;
+    foreach ($all_existing as $tn) {
+        $parts = explode('-', $tn);
+        if (isset($parts[1]) && is_numeric($parts[1])) {
+            $n = (int)$parts[1];
+            if ($n > $max_num) $max_num = $n;
+        }
+    }
     
-    return sprintf("%s-%03d", $prefix, $next_number);
+    return sprintf("%s-%03d", $prefix, $max_num + 1);
 }
 
 /**
- * Check if the patient with this phone number already has an active token for THIS doctor today.
+ * Check if the patient with this phone number already has an active token or booking for THIS doctor today.
  */
 function isPatientAlreadyInQueueForDoctor($pdo, $phone, $doctor_id) {
     $stmt = $pdo->prepare("
-        SELECT qt.token_id 
+        SELECT qt.token_id, qt.status, qt.booking_ref, qt.token_number
         FROM queue_tokens qt
         JOIN patients p ON qt.patient_id = p.patient_id
         WHERE p.phone = ? 
-        AND qt.status IN ('Waiting', 'In-Progress')
-        AND DATE(qt.arrival_time) = CURRENT_DATE
+        AND qt.status IN ('Waiting', 'In-Progress', 'Booked')
+        AND (qt.arrival_date = CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
         AND qt.doctor_id = ?
     ");
     $stmt->execute([$phone, $doctor_id]);
     return $stmt->fetch() !== false;
+}
+
+/**
+ * Generate a unique Booking Reference like BK-001 for advance bookings
+ */
+function generateBookingReference($pdo) {
+    $stmt = $pdo->prepare("
+        SELECT booking_ref 
+        FROM queue_tokens 
+        WHERE booking_ref LIKE 'BK-%' 
+        AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
+        ORDER BY token_id DESC
+    ");
+    $stmt->execute();
+    $existing = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $max_num = 0;
+    foreach ($existing as $ref) {
+        $parts = explode('-', $ref);
+        if (isset($parts[1]) && is_numeric($parts[1])) {
+            $n = (int)$parts[1];
+            if ($n > $max_num) $max_num = $n;
+        }
+    }
+    return sprintf("BK-%03d", $max_num + 1);
+}
+
+/**
+ * Calculate available appointment slots for a doctor today.
+ * Follows morning (9 AM - 1 PM) and evening (5 PM - 8 PM) sessions,
+ * enforces the booking_slot_percentage capacity, and filters booked or passed slots.
+ */
+function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false) {
+    $stmt = $pdo->prepare("
+        SELECT doctor_id, name, specialization, room_number, 
+               avg_service_time_in_minutes,
+               COALESCE(working_start_time, '09:00:00') as working_start_time,
+               COALESCE(working_end_time, '13:00:00') as working_end_time,
+               COALESCE(evening_start_time, '17:00:00') as evening_start_time,
+               COALESCE(evening_end_time, '20:00:00') as evening_end_time,
+               COALESCE(booking_slot_percentage, 70) as booking_slot_percentage
+        FROM doctors 
+        WHERE doctor_id = ?
+    ");
+    $stmt->execute([$doctor_id]);
+    $doc = $stmt->fetch();
+
+    if (!$doc) return ['slots' => [], 'doc' => null, 'total_capacity' => 0, 'bookable_capacity' => 0];
+
+    $interval = max(5, (int)$doc['avg_service_time_in_minutes']);
+    $pct = min(100, max(10, (int)$doc['booking_slot_percentage']));
+    $today = date('Y-m-d');
+    $now_ts = time();
+
+    // Helper to generate slots for a time range
+    $generateSlots = function($start_str, $end_str) use ($today, $interval) {
+        $slots = [];
+        $curr = strtotime("$today $start_str");
+        $end = strtotime("$today $end_str");
+        while (($curr + ($interval * 60)) <= $end) {
+            $slots[] = date('H:i:s', $curr);
+            $curr += ($interval * 60);
+        }
+        return $slots;
+    };
+
+    // 1. Generate full raw slots for morning and evening shifts
+    $morning_slots = $generateSlots($doc['working_start_time'], $doc['working_end_time']);
+    $evening_slots = !empty($doc['evening_start_time']) && !empty($doc['evening_end_time']) 
+        ? $generateSlots($doc['evening_start_time'], $doc['evening_end_time']) 
+        : [];
+
+    $all_slots = array_merge($morning_slots, $evening_slots);
+    $total_capacity = count($all_slots);
+
+    // 2. Calculate bookable capacity based on percentage (round down)
+    // Distribute proportionally across morning and evening
+    $morning_bookable_count = (int)floor(count($morning_slots) * ($pct / 100));
+    $evening_bookable_count = (int)floor(count($evening_slots) * ($pct / 100));
+
+    $bookable_morning = array_slice($morning_slots, 0, $morning_bookable_count);
+    $bookable_evening = array_slice($evening_slots, 0, $evening_bookable_count);
+    $bookable_slots = array_merge($bookable_morning, $bookable_evening);
+    $bookable_capacity = count($bookable_slots);
+
+    // 3. Fetch already booked slots for this doctor today
+    $booked_stmt = $pdo->prepare("
+        SELECT scheduled_time 
+        FROM queue_tokens 
+        WHERE doctor_id = ? 
+        AND booking_type = 'Pre-Booked' 
+        AND status NOT IN ('Cancelled', 'No-Show') 
+        AND (arrival_date = CURRENT_DATE OR DATE(scheduled_time) = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
+        AND scheduled_time IS NOT NULL
+    ");
+    $booked_stmt->execute([$doctor_id]);
+    $taken_raw = $booked_stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $taken_times = [];
+    foreach ($taken_raw as $t) {
+        $taken_times[date('H:i:s', strtotime($t))] = true;
+    }
+
+    // 4. Filter slots: must be bookable, not taken, and in the future (unless demo override)
+    $available_slots = [];
+    foreach ($bookable_slots as $slot_time) {
+        $slot_ts = strtotime("$today $slot_time");
+        $is_taken = isset($taken_times[$slot_time]);
+        $is_future = $ignore_past_filter ? true : ($slot_ts > $now_ts);
+
+        if (!$is_taken && $is_future) {
+            $is_morning = strtotime($slot_time) < strtotime('14:00:00');
+            $available_slots[] = [
+                'time_24' => $slot_time,
+                'time_12' => date('h:i A', $slot_ts),
+                'session' => $is_morning ? 'Morning (9 AM - 1 PM)' : 'Evening (5 PM - 8 PM)',
+                'timestamp' => $slot_ts
+            ];
+        }
+    }
+
+    return [
+        'slots' => $available_slots,
+        'doc' => $doc,
+        'total_capacity' => $total_capacity,
+        'bookable_capacity' => $bookable_capacity,
+        'walkin_capacity' => $total_capacity - $bookable_capacity
+    ];
 }
 ?>

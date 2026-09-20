@@ -18,7 +18,8 @@ $stmt = $pdo->prepare("
     FROM queue_tokens qt
     JOIN patients p ON qt.patient_id = p.patient_id
     JOIN doctors d ON qt.doctor_id = d.doctor_id
-    WHERE DATE(qt.arrival_time) = CURRENT_DATE
+    WHERE (DATE(qt.arrival_time) = CURRENT_DATE OR qt.arrival_date = CURRENT_DATE)
+    AND qt.token_number IS NOT NULL
     ORDER BY qt.arrival_time ASC
 ");
 $stmt->execute();
@@ -165,7 +166,7 @@ if (!$is_ajax):
                             <!-- Token No -->
                             <td class="py-4 px-8">
                                 <span class="font-black text-slate-800 dark:text-white text-xl">
-                                    <?= htmlspecialchars($token['token_number']) ?>
+                                    <?= htmlspecialchars($token['token_number'] ?? $token['booking_ref'] ?? 'N/A') ?>
                                 </span>
                             </td>
                             

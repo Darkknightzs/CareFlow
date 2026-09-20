@@ -221,6 +221,11 @@
                 </div>
                 <div class="flex space-x-6 items-center">
                     <?php if (!isset($_SESSION['user_logged_in'])): ?>
+                        <?php if (basename($_SERVER['PHP_SELF']) !== 'book_appointment.php'): ?>
+                            <a href="book_appointment.php" class="nav-link text-sm flex items-center gap-1.5 font-bold text-brand-600 dark:text-brand-400">
+                                <i class="ph ph-calendar-plus text-base"></i> Book Appointment
+                            </a>
+                        <?php endif; ?>
                         <?php if (basename($_SERVER['PHP_SELF']) !== 'lookup.php'): ?>
                             <a href="lookup.php" class="nav-link text-sm">Patient Lookup</a>
                         <?php endif; ?>

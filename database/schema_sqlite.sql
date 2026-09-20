@@ -8,7 +8,12 @@ CREATE TABLE IF NOT EXISTS doctors (
     name TEXT NOT NULL,
     specialization TEXT NOT NULL,
     room_number TEXT,
-    avg_service_time_in_minutes INTEGER NOT NULL DEFAULT 15
+    avg_service_time_in_minutes INTEGER NOT NULL DEFAULT 15,
+    working_start_time TEXT NOT NULL DEFAULT '09:00:00',
+    working_end_time TEXT NOT NULL DEFAULT '13:00:00',
+    evening_start_time TEXT DEFAULT '17:00:00',
+    evening_end_time TEXT DEFAULT '20:00:00',
+    booking_slot_percentage INTEGER NOT NULL DEFAULT 70
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -32,7 +37,10 @@ CREATE TABLE IF NOT EXISTS queue_tokens (
     token_id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id INTEGER NOT NULL REFERENCES patients(patient_id) ON DELETE CASCADE,
     doctor_id INTEGER NOT NULL REFERENCES doctors(doctor_id) ON DELETE CASCADE,
-    token_number TEXT NOT NULL,
+    token_number TEXT NULL,
+    booking_ref TEXT NULL,
+    booking_type TEXT NOT NULL DEFAULT 'Walk-in',
+    scheduled_time TIMESTAMP NULL,
     status TEXT NOT NULL DEFAULT 'Waiting',
     arrival_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     arrival_date DATE NOT NULL DEFAULT (DATE('now')),
@@ -45,6 +53,8 @@ CREATE TABLE IF NOT EXISTS queue_tokens (
 CREATE INDEX IF NOT EXISTS idx_queue_status ON queue_tokens(status);
 CREATE INDEX IF NOT EXISTS idx_queue_date ON queue_tokens(arrival_time);
 CREATE INDEX IF NOT EXISTS idx_patient_phone ON patients(phone);
+CREATE INDEX IF NOT EXISTS idx_booking_ref ON queue_tokens(booking_ref);
+CREATE INDEX IF NOT EXISTS idx_scheduled_time ON queue_tokens(scheduled_time);
 
 -- Seed Doctors
 INSERT OR IGNORE INTO doctors (doctor_id, name, specialization, room_number, avg_service_time_in_minutes) VALUES

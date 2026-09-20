@@ -83,8 +83,8 @@ try {
         $s_end = ($status === 'Completed') ? date('Y-m-d H:i:s', strtotime($s_start) + 600) : null;
 
         $ins_t = $pdo->prepare("
-            INSERT INTO queue_tokens (patient_id, doctor_id, token_number, estimated_wait_time, status, arrival_time, arrival_date, service_start_time, service_end_time)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO queue_tokens (patient_id, doctor_id, token_number, booking_type, estimated_wait_time, status, arrival_time, arrival_date, service_start_time, service_end_time)
+            VALUES (?, ?, ?, 'Walk-in', ?, ?, ?, ?, ?, ?)
         ");
         $ins_t->execute([$pt_id, $p['doc'], $token_number, ($status === 'Waiting' ? 15 : 0), $status, $arr_time, $current_date, $s_start, $s_end]);
     }

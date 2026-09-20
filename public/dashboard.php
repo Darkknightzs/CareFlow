@@ -24,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $call_next_patient = function($pdo, $doctor_id) {
         $next_stmt = $pdo->prepare("
             SELECT token_id FROM queue_tokens 
-            WHERE doctor_id = ? AND status = 'Waiting' AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
-            ORDER BY arrival_time ASC LIMIT 1
+            WHERE doctor_id = ? AND status = 'Waiting' AND token_number IS NOT NULL AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
+            ORDER BY COALESCE(scheduled_time, arrival_time) ASC LIMIT 1
         ");
         $next_stmt->execute([$doctor_id]);
         $next_token_id = $next_stmt->fetchColumn();
@@ -79,14 +79,25 @@ $specialization = $doctor_info ? $doctor_info['specialization'] : 'Specialist De
 $room_number = $doctor_info ? $doctor_info['room_number'] : 'Room TBD';
 $doc_name = $doctor_info ? $doctor_info['name'] : ($_SESSION['user_name'] ?? 'Doctor');
 
-// Fetch all queue tokens for today for THIS doctor only
+// Fetch all checked-in queue tokens for today for THIS doctor only
+// Pre-booked entries only join the doctor's live queue once converted at reception (token_number IS NOT NULL)
+// Ordered by effective time: scheduled_time for Pre-Booked, arrival_time for Walk-in
 $stmt = $pdo->prepare("
     SELECT qt.*, p.name as patient_name, p.phone as patient_phone, p.age as patient_age, p.gender as patient_gender, d.name as doctor_name, d.specialization
     FROM queue_tokens qt
     JOIN patients p ON qt.patient_id = p.patient_id
     JOIN doctors d ON qt.doctor_id = d.doctor_id
-    WHERE DATE(qt.arrival_time) = CURRENT_DATE AND qt.doctor_id = ?
-    ORDER BY qt.arrival_time ASC
+    WHERE (DATE(qt.arrival_time) = CURRENT_DATE OR qt.arrival_date = CURRENT_DATE)
+    AND qt.doctor_id = ?
+    AND qt.token_number IS NOT NULL
+    ORDER BY 
+        CASE 
+            WHEN qt.status = 'In-Progress' THEN 1
+            WHEN qt.status = 'Waiting' THEN 2
+            WHEN qt.status = 'Completed' THEN 3
+            ELSE 4
+        END ASC,
+        COALESCE(qt.scheduled_time, qt.arrival_time) ASC
 ");
 $stmt->execute([$doctor_id]);
 $tokens = $stmt->fetchAll();
@@ -185,6 +196,11 @@ if (!$is_ajax):
                             <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-brand-100 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 text-[10px] font-extrabold uppercase tracking-wider">
                                 <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span> In Consultation
                             </span>
+                            <?php if (($current_patient['booking_type'] ?? '') === 'Pre-Booked'): ?>
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-[10px] font-extrabold uppercase tracking-wider border border-indigo-200 dark:border-indigo-800">
+                                    <i class="ph ph-calendar-check"></i> Slot: <?= !empty($current_patient['scheduled_time']) ? date('h:i A', strtotime($current_patient['scheduled_time'])) : '' ?>
+                                </span>
+                            <?php endif; ?>
                             <span class="text-xs text-slate-400 font-medium">Started: <?= date('h:i A', strtotime($current_patient['service_start_time'] ?? 'now')) ?></span>
                         </div>
                         <h3 class="text-2xl font-black text-slate-800 dark:text-white leading-tight"><?= htmlspecialchars($current_patient['patient_name']) ?></h3>
@@ -314,11 +330,22 @@ if (!$is_ajax):
                     <?php foreach ($tokens as $token): ?>
                         <tr class="hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors duration-200 group">
                             
-                            <!-- Token No -->
+                            <!-- Token No & Type Badge -->
                             <td class="py-4 px-8">
-                                <span class="font-black text-slate-800 dark:text-white text-xl">
-                                    <?= htmlspecialchars($token['token_number']) ?>
-                                </span>
+                                <div class="flex flex-col gap-1 items-start">
+                                    <span class="font-black text-slate-800 dark:text-white text-xl leading-none">
+                                        <?= htmlspecialchars($token['token_number']) ?>
+                                    </span>
+                                    <?php if ($token['booking_type'] === 'Pre-Booked'): ?>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-[9px] font-black uppercase tracking-wider border border-indigo-200 dark:border-indigo-800/80" title="Pre-Booked for <?= !empty($token['scheduled_time']) ? date('h:i A', strtotime($token['scheduled_time'])) : '' ?>">
+                                            <i class="ph ph-calendar-check text-[10px]"></i> Booked <?= !empty($token['scheduled_time']) ? date('h:i A', strtotime($token['scheduled_time'])) : '' ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 text-[9px] font-bold uppercase tracking-wider">
+                                            Walk-in
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             
                             <!-- Patient Info -->

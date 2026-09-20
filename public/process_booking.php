@@ -61,27 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $doc_stmt->execute([$doctor_id]);
         $doc = $doc_stmt->fetch();
         
-        $prefix = strtoupper(substr($doc['specialization'] ?? 'GEN', 0, 3));
-        
-        // Find the maximum existing sequence number for this prefix today to prevent any duplicate key collision
-        $seq_stmt = $pdo->prepare("
-            SELECT token_number 
-            FROM queue_tokens 
-            WHERE doctor_id = ? AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
-            ORDER BY token_id DESC
-        ");
-        $seq_stmt->execute([$doctor_id]);
-        $all_existing = $seq_stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        $max_num = 0;
-        foreach ($all_existing as $tn) {
-            $parts = explode('-', $tn);
-            if (isset($parts[1]) && is_numeric($parts[1])) {
-                $n = (int)$parts[1];
-                if ($n > $max_num) $max_num = $n;
-            }
-        }
-        $token_number = sprintf("%s-%03d", $prefix, $max_num + 1);
+        $token_number = generateTokenNumber($pdo, $doctor_id, $doc['specialization'] ?? 'GEN');
 
         $wait_data = calculateDynamicWait($pdo, $doctor_id);
         $est_wait = $wait_data['total_wait'];

@@ -12,7 +12,7 @@ $stmt = $pdo->query("SELECT doctor_id, specialization FROM doctors ORDER BY doct
 $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (count($doctors) < 2) {
-    die("Please run db_migrate.php first to set up the two doctors.");
+    die("Please run setup_db.php first to set up the doctors.\n");
 }
 
 $dr_gen_opd = null;
@@ -24,6 +24,10 @@ foreach ($doctors as $d) {
     if ($d['specialization'] === 'Cardiology') $dr_cardio = $d['doctor_id'];
     if ($d['specialization'] === 'Orthopedics') $dr_ortho = $d['doctor_id'];
 }
+
+$dr_gen_opd = $dr_gen_opd ?? $doctors[0]['doctor_id'];
+$dr_cardio = $dr_cardio ?? ($doctors[1]['doctor_id'] ?? $doctors[0]['doctor_id']);
+$dr_ortho = $dr_ortho ?? ($doctors[2]['doctor_id'] ?? $doctors[0]['doctor_id']);
 
 // Realistic dummy patient data strictly following real clinic timeline:
 // [Completed / Past No-Shows] -> [Currently In-Progress] -> [Waiting Patients]
@@ -67,6 +71,16 @@ if ($GLOBALS['DB_ENGINE'] === 'sqlite') {
 $current_date = date('Y-m-d');
 $base_time = strtotime("$current_date 09:00:00");
 
+// Update doctors with standard shift hours and booking percentage
+$pdo->exec("
+    UPDATE doctors 
+    SET working_start_time = '09:00:00',
+        working_end_time = '13:00:00',
+        evening_start_time = '17:00:00',
+        evening_end_time = '20:00:00',
+        booking_slot_percentage = 70
+");
+
 $counters = ['GEN' => 1, 'CAR' => 1, 'ORT' => 1];
 
 foreach ($dummy_patients as $index => $p) {
@@ -89,10 +103,16 @@ foreach ($dummy_patients as $index => $p) {
     if ($status === 'Completed') {
         $service_end = date('Y-m-d H:i:s', strtotime($service_start) + rand(480, 1320));
     }
+
+    // Make some patients pre-booked to demonstrate interleaving
+    $booking_type = ($index % 3 === 0) ? 'Pre-Booked' : 'Walk-in';
+    $scheduled_time = ($booking_type === 'Pre-Booked') ? date('Y-m-d H:i:s', $base_time + ($index * 900)) : null;
+    $booking_ref = ($booking_type === 'Pre-Booked') ? 'BK-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT) : null;
     
     $token_stmt = $pdo->prepare("
-        INSERT INTO queue_tokens (patient_id, doctor_id, token_number, estimated_wait_time, status, arrival_time, arrival_date, service_start_time, service_end_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO queue_tokens 
+        (patient_id, doctor_id, token_number, booking_ref, booking_type, scheduled_time, estimated_wait_time, status, arrival_time, arrival_date, service_start_time, service_end_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $wait_time = ($status === 'Waiting') ? 15 : 0;
     
@@ -100,6 +120,9 @@ foreach ($dummy_patients as $index => $p) {
         $patient_id,
         $p['doc'],
         $token_number,
+        $booking_ref,
+        $booking_type,
+        $scheduled_time,
         $wait_time,
         $status,
         $arrival_time,
@@ -109,5 +132,29 @@ foreach ($dummy_patients as $index => $p) {
     ]);
 }
 
-echo "Successfully seeded dummy patients and queue tokens for today!\n";
+// Also Seed 2-3 Pending Pre-Bookings (Status 'Booked', Token Number NULL) for immediate reception check-in demonstration
+$pending_prebookings = [
+    ['name' => 'Kavita Singhania', 'phone' => '9876543231', 'age' => 44, 'gender' => 'Female', 'doc' => $dr_gen_opd, 'slot' => '10:30:00'],
+    ['name' => 'Aditya Roy',        'phone' => '9876543232', 'age' => 31, 'gender' => 'Male',   'doc' => $dr_cardio,  'slot' => '11:20:00'],
+    ['name' => 'Nandini Joshi',     'phone' => '9876543233', 'age' => 50, 'gender' => 'Female', 'doc' => $dr_ortho,   'slot' => '17:30:00']
+];
+
+$bk_ref_counter = 20;
+foreach ($pending_prebookings as $pb) {
+    $ins_p = $pdo->prepare("INSERT INTO patients (name, phone, age, gender) VALUES (?, ?, ?, ?)");
+    $ins_p->execute([$pb['name'], $pb['phone'], $pb['age'], $pb['gender']]);
+    $pt_id = $pdo->lastInsertId();
+
+    $b_ref = 'BK-' . str_pad($bk_ref_counter++, 3, '0', STR_PAD_LEFT);
+    $sched_dt = "$current_date " . $pb['slot'];
+
+    $ins_b = $pdo->prepare("
+        INSERT INTO queue_tokens 
+        (patient_id, doctor_id, token_number, booking_ref, booking_type, scheduled_time, estimated_wait_time, status, arrival_time, arrival_date)
+        VALUES (?, ?, NULL, ?, 'Pre-Booked', ?, 0, 'Booked', CURRENT_TIMESTAMP, ?)
+    ");
+    $ins_b->execute([$pt_id, $pb['doc'], $b_ref, $sched_dt, $current_date]);
+}
+
+echo "Successfully seeded dummy patients, live tokens, and pending advance bookings for today!\n";
 ?>

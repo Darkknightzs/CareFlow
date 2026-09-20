@@ -3,6 +3,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+date_default_timezone_set(getenv('APP_TIMEZONE') ?: 'Asia/Kolkata');
+
 // Database Driver Selection & Fallback Logic
 // Priority: 1. MySQL (as per project requirements) 2. Standalone SQLite (Zero-config fallback)
 

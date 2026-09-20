@@ -24,14 +24,14 @@ if (!empty($incoming_phone) || !empty($incoming_token)) {
             JOIN patients p ON qt.patient_id = p.patient_id
             JOIN doctors d ON qt.doctor_id = d.doctor_id
             WHERE p.phone = ? AND (UPPER(qt.token_number) = ? OR UPPER(qt.booking_ref) = ?) 
-            AND (qt.arrival_date = CURRENT_DATE OR DATE(qt.scheduled_time) = CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
+            AND (qt.arrival_date >= CURRENT_DATE OR DATE(qt.scheduled_time) >= CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
             ORDER BY qt.token_id DESC LIMIT 1
         ");
         $stmt->execute([$phone, $token_number, $token_number]);
         $search_result = $stmt->fetch();
         
         if (!$search_result) {
-            $error = "No active appointment or token found for today matching '$token_number' and Phone '$phone'.";
+            $error = "No active appointment or token found matching '$token_number' and Phone '$phone'.";
         }
     } elseif (!empty($token_number)) {
         // Search by Token Number or Booking Reference directly
@@ -41,31 +41,31 @@ if (!empty($incoming_phone) || !empty($incoming_token)) {
             JOIN patients p ON qt.patient_id = p.patient_id
             JOIN doctors d ON qt.doctor_id = d.doctor_id
             WHERE (UPPER(qt.token_number) = ? OR UPPER(qt.booking_ref) = ?) 
-            AND (qt.arrival_date = CURRENT_DATE OR DATE(qt.scheduled_time) = CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
+            AND (qt.arrival_date >= CURRENT_DATE OR DATE(qt.scheduled_time) >= CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
             ORDER BY qt.token_id DESC LIMIT 1
         ");
         $stmt->execute([$token_number, $token_number]);
         $search_result = $stmt->fetch();
         
         if (!$search_result) {
-            $error = "No active record found for Reference / Token '$token_number' today.";
+            $error = "No active record found for Reference / Token '$token_number'.";
         }
     } else {
-        // User entered only Phone -> find their latest token or booking today automatically
+        // User entered only Phone -> find their latest token or booking automatically
         $stmt = $pdo->prepare("
             SELECT qt.*, d.name as doctor_name, d.specialization as department, d.room_number, p.name as patient_name 
             FROM queue_tokens qt
             JOIN patients p ON qt.patient_id = p.patient_id
             JOIN doctors d ON qt.doctor_id = d.doctor_id
             WHERE p.phone = ? 
-            AND (qt.arrival_date = CURRENT_DATE OR DATE(qt.scheduled_time) = CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
+            AND (qt.arrival_date >= CURRENT_DATE OR DATE(qt.scheduled_time) >= CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
             ORDER BY qt.token_id DESC LIMIT 1
         ");
         $stmt->execute([$phone]);
         $search_result = $stmt->fetch();
         
         if (!$search_result) {
-            $error = "No active check-in or booking found for phone number '$phone' today.";
+            $error = "No active check-in or booking found for phone number '$phone'.";
         }
     }
 
@@ -160,9 +160,13 @@ include '../includes/header.php';
                     
                     <?php if ($search_result['status'] === 'Booked'): ?>
                         <div class="bg-indigo-50/80 border border-indigo-200 p-3 rounded-lg text-center">
-                            <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block mb-0.5">Scheduled Time Slot</span>
+                            <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block mb-0.5">Scheduled Appointment</span>
                             <span class="text-2xl font-black text-indigo-900"><?= date('h:i A', strtotime($search_result['scheduled_time'])) ?></span>
-                            <span class="text-[11px] text-indigo-700 block mt-1">Please arrive 10m before your slot and check in at the reception desk.</span>
+                            <span class="text-xs font-extrabold text-indigo-800 block mt-0.5">
+                                <?= (date('Y-m-d', strtotime($search_result['scheduled_time'])) === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow, ' : '' ?>
+                                <?= date('l, M d, Y', strtotime($search_result['scheduled_time'])) ?>
+                            </span>
+                            <span class="text-[11px] text-indigo-700 block mt-1">Please arrive at least 10 mins before your slot and check in at the reception desk.</span>
                         </div>
                     <?php elseif ($search_result['status'] === 'Waiting'): ?>
                         <div class="grid grid-cols-2 gap-2 pt-0.5">

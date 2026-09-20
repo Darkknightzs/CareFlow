@@ -79,34 +79,36 @@ function generateTokenNumber($pdo, $doctor_id, $specialization) {
 }
 
 /**
- * Check if the patient with this phone number already has an active token or booking for THIS doctor today.
+ * Check if the patient with this phone number already has an active token or booking for THIS doctor on target date.
  */
-function isPatientAlreadyInQueueForDoctor($pdo, $phone, $doctor_id) {
+function isPatientAlreadyInQueueForDoctor($pdo, $phone, $doctor_id, $target_date = null) {
+    if (!$target_date) $target_date = date('Y-m-d');
     $stmt = $pdo->prepare("
         SELECT qt.token_id, qt.status, qt.booking_ref, qt.token_number
         FROM queue_tokens qt
         JOIN patients p ON qt.patient_id = p.patient_id
         WHERE p.phone = ? 
         AND qt.status IN ('Waiting', 'In-Progress', 'Booked')
-        AND (qt.arrival_date = CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
+        AND (qt.arrival_date = ? OR DATE(qt.scheduled_time) = ? OR DATE(qt.arrival_time) = ?)
         AND qt.doctor_id = ?
     ");
-    $stmt->execute([$phone, $doctor_id]);
+    $stmt->execute([$phone, $target_date, $target_date, $target_date, $doctor_id]);
     return $stmt->fetch() !== false;
 }
 
 /**
  * Generate a unique Booking Reference like BK-001 for advance bookings
  */
-function generateBookingReference($pdo) {
+function generateBookingReference($pdo, $target_date = null) {
+    if (!$target_date) $target_date = date('Y-m-d');
     $stmt = $pdo->prepare("
         SELECT booking_ref 
         FROM queue_tokens 
         WHERE booking_ref LIKE 'BK-%' 
-        AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
+        AND (arrival_date = ? OR DATE(scheduled_time) = ? OR DATE(arrival_time) = ?)
         ORDER BY token_id DESC
     ");
-    $stmt->execute();
+    $stmt->execute([$target_date, $target_date, $target_date]);
     $existing = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     $max_num = 0;
@@ -125,7 +127,7 @@ function generateBookingReference($pdo) {
  * Follows morning (9 AM - 1 PM) and evening (5 PM - 8 PM) sessions,
  * enforces the booking_slot_percentage capacity, and filters booked or passed slots.
  */
-function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false) {
+function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false, $target_date = null) {
     $stmt = $pdo->prepare("
         SELECT doctor_id, name, specialization, room_number, 
                avg_service_time_in_minutes,
@@ -142,16 +144,25 @@ function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false) {
 
     if (!$doc) return ['slots' => [], 'doc' => null, 'total_capacity' => 0, 'bookable_capacity' => 0];
 
+    // Determine target date: If past 20:00 (8:00 PM, evening OPD closed), automatically target tomorrow morning!
+    $today = date('Y-m-d');
+    $tomorrow = date('Y-m-d', strtotime('+1 day'));
+    if (!$target_date) {
+        $target_date = ((int)date('H') >= 20) ? $tomorrow : $today;
+    }
+
+    $is_tomorrow = ($target_date === $tomorrow);
+    $is_today = ($target_date === $today);
+
     $interval = max(5, (int)$doc['avg_service_time_in_minutes']);
     $pct = min(100, max(10, (int)$doc['booking_slot_percentage']));
-    $today = date('Y-m-d');
     $now_ts = time();
 
     // Helper to generate slots for a time range
-    $generateSlots = function($start_str, $end_str) use ($today, $interval) {
+    $generateSlots = function($start_str, $end_str) use ($target_date, $interval) {
         $slots = [];
-        $curr = strtotime("$today $start_str");
-        $end = strtotime("$today $end_str");
+        $curr = strtotime("$target_date $start_str");
+        $end = strtotime("$target_date $end_str");
         while (($curr + ($interval * 60)) <= $end) {
             $slots[] = date('H:i:s', $curr);
             $curr += ($interval * 60);
@@ -178,17 +189,17 @@ function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false) {
     $bookable_slots = array_merge($bookable_morning, $bookable_evening);
     $bookable_capacity = count($bookable_slots);
 
-    // 3. Fetch already booked slots for this doctor today
+    // 3. Fetch already booked slots for this doctor on the target date
     $booked_stmt = $pdo->prepare("
         SELECT scheduled_time 
         FROM queue_tokens 
         WHERE doctor_id = ? 
         AND booking_type = 'Pre-Booked' 
         AND status NOT IN ('Cancelled', 'No-Show') 
-        AND (arrival_date = CURRENT_DATE OR DATE(scheduled_time) = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
+        AND (arrival_date = ? OR DATE(scheduled_time) = ?)
         AND scheduled_time IS NOT NULL
     ");
-    $booked_stmt->execute([$doctor_id]);
+    $booked_stmt->execute([$doctor_id, $target_date, $target_date]);
     $taken_raw = $booked_stmt->fetchAll(PDO::FETCH_COLUMN);
 
     $taken_times = [];
@@ -196,25 +207,29 @@ function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false) {
         $taken_times[date('H:i:s', strtotime($t))] = true;
     }
 
-    // 4. Filter slots: must be bookable, not taken, and in the future (unless demo override)
+    // 4. Filter slots: must be bookable, not taken, and in the future
+    // If target date is tomorrow, ALL slots are in the future!
     $available_slots = [];
     foreach ($bookable_slots as $slot_time) {
-        $slot_ts = strtotime("$today $slot_time");
+        $slot_ts = strtotime("$target_date $slot_time");
         $is_taken = isset($taken_times[$slot_time]);
-        $is_future = $ignore_past_filter ? true : ($slot_ts > $now_ts);
+        $is_future = ($ignore_past_filter || !$is_today) ? true : ($slot_ts > $now_ts);
 
         if (!$is_taken && $is_future) {
             $is_morning = strtotime($slot_time) < strtotime('14:00:00');
             $available_slots[] = [
                 'time_24' => $slot_time,
                 'time_12' => date('h:i A', $slot_ts),
-                'session' => $is_morning ? 'Morning (9 AM - 1 PM)' : 'Evening (5 PM - 8 PM)',
+                'session' => $is_morning ? 'Morning OPD (09:00 AM – 01:00 PM)' : 'Evening OPD (05:00 PM – 08:00 PM)',
                 'timestamp' => $slot_ts
             ];
         }
     }
 
     return [
+        'target_date' => $target_date,
+        'is_tomorrow' => $is_tomorrow,
+        'date_label' => $is_tomorrow ? ('Tomorrow: ' . date('M d, Y', strtotime($target_date))) : ('Today: ' . date('M d, Y', strtotime($target_date))),
         'slots' => $available_slots,
         'doc' => $doc,
         'total_capacity' => $total_capacity,

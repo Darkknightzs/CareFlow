@@ -9,12 +9,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_slots') {
     $doctor_id = (int)($_GET['doctor_id'] ?? 0);
     $demo = isset($_GET['demo']) && $_GET['demo'] == '1';
     
+    $target_date = isset($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']) ? $_GET['date'] : null;
+    
     if ($doctor_id <= 0) {
         echo json_encode(['success' => false, 'error' => 'Invalid doctor selected.']);
         exit;
     }
 
-    $slot_data = getAvailableSlots($pdo, $doctor_id, $demo);
+    $slot_data = getAvailableSlots($pdo, $doctor_id, $demo, $target_date);
     echo json_encode(['success' => true, 'data' => $slot_data]);
     exit;
 }
@@ -22,14 +24,23 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_slots') {
 $error = '';
 $booking_success = null;
 
+$is_after_hours = ((int)date('H') >= 20);
+$default_booking_date = $is_after_hours ? date('Y-m-d', strtotime('+1 day')) : date('Y-m-d');
+$active_booking_date = $_POST['booking_date'] ?? $default_booking_date;
+
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $doctor_id = (int)($_POST['doctor_id'] ?? 0);
+    $booking_date = trim($_POST['booking_date'] ?? '');
     $slot_time = trim($_POST['slot_time'] ?? '');
     $name = trim($_POST['name'] ?? '');
     $phone = preg_replace('/[^0-9]/', '', trim($_POST['phone'] ?? ''));
     $age = (int)($_POST['age'] ?? 0);
     $gender = trim($_POST['gender'] ?? '');
+
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $booking_date)) {
+        $booking_date = $default_booking_date;
+    }
 
     // Validation
     if (!$doctor_id) {
@@ -44,12 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Please enter a valid age between 1 and 150.";
     } elseif (empty($gender)) {
         $error = "Please select a gender.";
-    } elseif (isPatientAlreadyInQueueForDoctor($pdo, $phone, $doctor_id)) {
-        $error = "This mobile number already has an active appointment or queue token for this doctor today. Please check in at reception or check your status on the Lookup page.";
+    } elseif (isPatientAlreadyInQueueForDoctor($pdo, $phone, $doctor_id, $booking_date)) {
+        $date_display = ($booking_date === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow (' . date('M d, Y', strtotime($booking_date)) . ')' : 'Today';
+        $error = "This mobile number already has an active appointment or queue token for this doctor for $date_display. Please check your status on the Lookup page.";
     } else {
         // Concurrency Check: Verify slot is still open
-        $today = date('Y-m-d');
-        $scheduled_datetime = "$today " . substr($slot_time, 0, 8);
+        $scheduled_datetime = "$booking_date " . substr($slot_time, 0, 8);
 
         $check_slot = $pdo->prepare("
             SELECT token_id 
@@ -57,9 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             WHERE doctor_id = ? 
             AND scheduled_time = ? 
             AND status NOT IN ('Cancelled', 'No-Show')
-            AND (arrival_date = CURRENT_DATE OR DATE(scheduled_time) = CURRENT_DATE)
+            AND (arrival_date = ? OR DATE(scheduled_time) = ?)
         ");
-        $check_slot->execute([$doctor_id, $scheduled_datetime]);
+        $check_slot->execute([$doctor_id, $scheduled_datetime, $booking_date, $booking_date]);
         if ($check_slot->fetch()) {
             $error = "This appointment slot was just reserved by another patient. Please pick a different available slot.";
         } else {
@@ -80,16 +91,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $patient_id = $pdo->lastInsertId();
                 }
 
-                // 2. Generate Booking Reference (e.g. BK-001)
-                $booking_ref = generateBookingReference($pdo);
+                // 2. Generate Booking Reference (e.g. BK-001) for the target date
+                $booking_ref = generateBookingReference($pdo, $booking_date);
 
                 // 3. Insert into queue_tokens with status 'Booked' and token_number = NULL
                 $ins_tok = $pdo->prepare("
                     INSERT INTO queue_tokens 
                     (patient_id, doctor_id, token_number, booking_ref, booking_type, scheduled_time, status, arrival_date, estimated_wait_time)
-                    VALUES (?, ?, NULL, ?, 'Pre-Booked', ?, 'Booked', CURRENT_DATE, 0)
+                    VALUES (?, ?, NULL, ?, 'Pre-Booked', ?, 'Booked', ?, 0)
                 ");
-                $ins_tok->execute([$patient_id, $doctor_id, $booking_ref, $scheduled_datetime]);
+                $ins_tok->execute([$patient_id, $doctor_id, $booking_ref, $scheduled_datetime, $booking_date]);
 
                 $pdo->commit();
 
@@ -106,7 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'department' => $doc_info['specialization'],
                     'room_number' => $doc_info['room_number'],
                     'scheduled_time' => date('h:i A', strtotime($scheduled_datetime)),
-                    'date' => date('M d, Y')
+                    'date' => date('l, M d, Y', strtotime($booking_date)),
+                    'is_tomorrow' => ($booking_date === date('Y-m-d', strtotime('+1 day')))
                 ];
             } catch (Exception $e) {
                 if ($pdo->inTransaction()) {
@@ -242,24 +254,42 @@ include '../includes/header.php';
 
                 <!-- Step 2: Slot Selection Container -->
                 <div id="slotsSection" class="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 <?= empty($_POST['doctor_id']) ? 'hidden' : '' ?>">
+                    
+                    <?php if ($is_after_hours): ?>
+                        <div class="bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/60 p-3 rounded-xl mb-3 flex items-center gap-2.5 text-xs text-indigo-800 dark:text-indigo-200">
+                            <i class="ph-fill ph-moon-stars text-xl text-indigo-600 dark:text-indigo-400 flex-shrink-0"></i>
+                            <div>
+                                <span class="font-extrabold block">Today's clinic is closed (OPD hours: 9:00 AM – 1:00 PM & 5:00 PM – 8:00 PM).</span>
+                                <span class="text-[11px]">Booking is now open for <strong>Tomorrow Morning & Evening (<?= date('M d, Y', strtotime('+1 day')) ?>)</strong>.</span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                         <label class="form-label !text-xs !mb-0 flex items-center gap-1.5">
                             <span class="w-5 h-5 rounded-full bg-brand-600 text-white inline-flex items-center justify-center text-[10px] font-black">2</span>
-                            Pick Available Appointment Slot (Today: <?= date('M d, Y') ?>)
+                            Pick Appointment Slot (<span id="slotDateLabel"><?= ($active_booking_date === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow: ' . date('M d, Y', strtotime('+1 day')) : 'Today: ' . date('M d, Y') ?></span>)
                         </label>
-                        <span id="capacityBadge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300">
-                            70% Online Capacity
-                        </span>
+                        
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="changeDate('<?= date('Y-m-d') ?>')" id="dateBtnToday" class="date-tab px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border <?= $active_booking_date === date('Y-m-d') ? 'bg-brand-600 text-white border-brand-600 shadow-xs' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-400' ?>">
+                                Today (<?= date('M d') ?>)
+                            </button>
+                            <button type="button" onclick="changeDate('<?= date('Y-m-d', strtotime('+1 day')) ?>')" id="dateBtnTomorrow" class="date-tab px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border <?= $active_booking_date === date('Y-m-d', strtotime('+1 day')) ? 'bg-brand-600 text-white border-brand-600 shadow-xs' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-400' ?>">
+                                Tomorrow (<?= date('M d', strtotime('+1 day')) ?>)
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Hidden input to store chosen slot -->
+                    <!-- Hidden inputs to store chosen date and slot -->
+                    <input type="hidden" id="booking_date" name="booking_date" value="<?= htmlspecialchars($active_booking_date) ?>">
                     <input type="hidden" id="slot_time" name="slot_time" value="<?= htmlspecialchars($_POST['slot_time'] ?? '') ?>" required>
 
                     <!-- Slot loading spinner / container -->
                     <div id="slotsContainer" class="py-2">
                         <div class="text-center py-6 text-slate-400 text-xs">
                             <i class="ph ph-calendar text-3xl mb-1 block"></i>
-                            Select a doctor above to load open slots for today.
+                            Select a doctor above to load open slots.
                         </div>
                     </div>
 
@@ -267,7 +297,7 @@ include '../includes/header.php';
                     <div id="demoNotice" class="hidden mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-400 flex items-center justify-between">
                         <span>Clinic hours: 9:00 AM – 1:00 PM & 5:00 PM – 8:00 PM.</span>
                         <button type="button" onclick="loadDoctorSlots(document.getElementById('doctor_id').value, true)" class="text-brand-600 dark:text-brand-400 underline hover:text-brand-700 font-semibold">
-                            [Demo Mode: Preview All Today's Slots]
+                            [Demo Mode: Preview All Shift Slots]
                         </button>
                     </div>
                 </div>
@@ -334,6 +364,32 @@ include '../includes/header.php';
 
 <script>
 let selectedSlotTime = "<?= htmlspecialchars($_POST['slot_time'] ?? '') ?>";
+let currentTargetDate = "<?= htmlspecialchars($active_booking_date) ?>";
+
+function changeDate(newDate) {
+    currentTargetDate = newDate;
+    document.getElementById('booking_date').value = newDate;
+    document.getElementById('slot_time').value = '';
+    selectedSlotTime = '';
+    
+    // Update button styling
+    const todayBtn = document.getElementById('dateBtnToday');
+    const tomorrowBtn = document.getElementById('dateBtnTomorrow');
+    const todayStr = "<?= date('Y-m-d') ?>";
+    
+    if (newDate === todayStr) {
+        todayBtn.className = "date-tab px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border bg-brand-600 text-white border-brand-600 shadow-xs";
+        tomorrowBtn.className = "date-tab px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-400";
+    } else {
+        tomorrowBtn.className = "date-tab px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border bg-brand-600 text-white border-brand-600 shadow-xs";
+        todayBtn.className = "date-tab px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-400";
+    }
+    
+    const docSelect = document.getElementById('doctor_id');
+    if (docSelect && docSelect.value) {
+        loadDoctorSlots(docSelect.value);
+    }
+}
 
 function loadDoctorSlots(doctorId, demoMode = false) {
     if (!doctorId) return;
@@ -350,7 +406,7 @@ function loadDoctorSlots(doctorId, demoMode = false) {
         </div>
     `;
 
-    fetch(`book_appointment.php?action=get_slots&doctor_id=${doctorId}${demoMode ? '&demo=1' : ''}`)
+    fetch(`book_appointment.php?action=get_slots&doctor_id=${doctorId}&date=${currentTargetDate}${demoMode ? '&demo=1' : ''}`)
         .then(res => res.json())
         .then(res => {
             if (!res.success) {
@@ -361,6 +417,10 @@ function loadDoctorSlots(doctorId, demoMode = false) {
             const data = res.data;
             const slots = data.slots;
             
+            if (document.getElementById('slotDateLabel') && data.date_label) {
+                document.getElementById('slotDateLabel').innerText = data.date_label;
+            }
+            
             // Show demo notice if after hours
             demoNotice.classList.remove('hidden');
 
@@ -368,8 +428,8 @@ function loadDoctorSlots(doctorId, demoMode = false) {
                 container.innerHTML = `
                     <div class="text-center py-6 bg-slate-100/70 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/80 dark:border-slate-800">
                         <i class="ph ph-clock-countdown text-3xl text-amber-500 mb-1"></i>
-                        <p class="text-sm font-bold text-slate-700 dark:text-slate-300">No more slots available today</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">All pre-booking capacity for today is filled or passed. You can still walk in directly at the hospital reception.</p>
+                        <p class="text-sm font-bold text-slate-700 dark:text-slate-300">No slots available for ${data.date_label}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">All pre-booking capacity is filled. You can switch dates above or visit reception directly for walk-in OPD.</p>
                     </div>
                 `;
                 return;

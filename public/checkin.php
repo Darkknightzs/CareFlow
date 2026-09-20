@@ -75,14 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             JOIN patients p ON qt.patient_id = p.patient_id
             WHERE (UPPER(qt.booking_ref) = ? OR p.phone = ?)
             AND qt.status = 'Booked'
-            AND (qt.arrival_date = CURRENT_DATE OR DATE(qt.scheduled_time) = CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
+            AND (qt.arrival_date >= CURRENT_DATE OR DATE(qt.scheduled_time) >= CURRENT_DATE OR DATE(qt.arrival_time) = CURRENT_DATE)
             ORDER BY qt.token_id DESC LIMIT 1
         ");
         $search_stmt->execute([$query, $digits]);
         $searched_booking = $search_stmt->fetch();
 
         if (!$searched_booking) {
-            $action_error = "No pending booking found for today matching '$query'. You can register this patient as a walk-in.";
+            $action_error = "No pending booking found matching '$query'. You can register this patient as a walk-in.";
         }
         $active_tab = 'booking';
     }

@@ -229,7 +229,7 @@ function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false, $targe
     return [
         'target_date' => $target_date,
         'is_tomorrow' => $is_tomorrow,
-        'date_label' => $is_tomorrow ? ('Tomorrow: ' . date('M d, Y', strtotime($target_date))) : ('Today: ' . date('M d, Y', strtotime($target_date))),
+        'date_label' => $is_tomorrow ? ('Tomorrow (' . date('M d, Y', strtotime($target_date)) . ')') : ('Today (' . date('M d, Y', strtotime($target_date)) . ')'),
         'slots' => $available_slots,
         'doc' => $doc,
         'total_capacity' => $total_capacity,

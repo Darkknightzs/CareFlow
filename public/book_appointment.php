@@ -53,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Please enter a valid 10-digit mobile number.";
     } elseif ($age <= 0 || $age > 150) {
         $error = "Please enter a valid age between 1 and 150.";
-    } elseif (empty($gender)) {
-        $error = "Please select a gender.";
+    } elseif (!in_array($gender, ['Male', 'Female'])) {
+        $error = "Please select a valid gender (Male or Female).";
     } elseif (isPatientAlreadyInQueueForDoctor($pdo, $phone, $doctor_id, $booking_date)) {
         $date_display = ($booking_date === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow (' . date('M d, Y', strtotime($booking_date)) . ')' : 'Today';
         $error = "This mobile number already has an active appointment or queue token for this doctor for $date_display. Please check your status on the Lookup page.";
@@ -151,7 +151,7 @@ include '../includes/header.php';
                 Appointment Confirmed
             </span>
             <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Booking Successful!</h2>
-            <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">Your same-day appointment slot has been reserved.</p>
+            <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">Your appointment slot has been reserved.</p>
 
             <!-- Booking Card -->
             <div class="bg-gradient-to-br from-brand-50/70 to-white dark:from-slate-800/70 dark:to-slate-900/70 border border-brand-200/80 dark:border-slate-700/80 p-6 rounded-2xl shadow-md my-6 text-left relative overflow-hidden">
@@ -217,7 +217,7 @@ include '../includes/header.php';
                 <span class="inline-block py-1 px-3 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-bold text-[10px] tracking-widest uppercase border border-brand-200 dark:border-brand-700/50 mb-2">
                     Advance OPD Scheduling
                 </span>
-                <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Book Same-Day Appointment</h2>
+                <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Book OPD Appointment</h2>
                 <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">
                     Select a doctor, pick a reserved time slot, and receive a Booking Reference. No password or login required.
                 </p>
@@ -266,9 +266,9 @@ include '../includes/header.php';
                     <?php endif; ?>
 
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-                        <label class="form-label !text-xs !mb-0 flex items-center gap-1.5">
+                        <label class="form-label !text-xs !mb-0 flex items-center gap-1.5 normal-case font-semibold text-slate-700 dark:text-slate-200">
                             <span class="w-5 h-5 rounded-full bg-brand-600 text-white inline-flex items-center justify-center text-[10px] font-black">2</span>
-                            Pick Appointment Slot (<span id="slotDateLabel"><?= ($active_booking_date === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow: ' . date('M d, Y', strtotime('+1 day')) : 'Today: ' . date('M d, Y') ?></span>)
+                            Pick Appointment Slot — <span id="slotDateLabel" class="font-black text-brand-600 dark:text-brand-400"><?= ($active_booking_date === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow (' . date('M d, Y', strtotime('+1 day')) . ')' : 'Today (' . date('M d, Y') . ')' ?></span>
                         </label>
                         
                         <div class="flex items-center gap-1.5">
@@ -293,12 +293,10 @@ include '../includes/header.php';
                         </div>
                     </div>
 
-                    <!-- Late hours note / Demo override -->
-                    <div id="demoNotice" class="hidden mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-400 flex items-center justify-between">
-                        <span>Clinic hours: 9:00 AM – 1:00 PM & 5:00 PM – 8:00 PM.</span>
-                        <button type="button" onclick="loadDoctorSlots(document.getElementById('doctor_id').value, true)" class="text-brand-600 dark:text-brand-400 underline hover:text-brand-700 font-semibold">
-                            [Demo Mode: Preview All Shift Slots]
-                        </button>
+                    <!-- Clinic OPD Timings Note -->
+                    <div class="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <i class="ph ph-clock text-slate-400 text-sm"></i>
+                        <span>OPD Timings: Morning 9:00 AM – 1:00 PM &bull; Evening 5:00 PM – 8:00 PM</span>
                     </div>
                 </div>
 
@@ -338,7 +336,6 @@ include '../includes/header.php';
                                     <option value="" disabled selected>Choose gender...</option>
                                     <option value="Male" <?= (isset($_POST['gender']) && $_POST['gender'] === 'Male') ? 'selected' : '' ?>>Male</option>
                                     <option value="Female" <?= (isset($_POST['gender']) && $_POST['gender'] === 'Female') ? 'selected' : '' ?>>Female</option>
-                                    <option value="Other" <?= (isset($_POST['gender']) && $_POST['gender'] === 'Other') ? 'selected' : '' ?>>Other</option>
                                 </select>
                                 <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                             </div>
@@ -391,12 +388,11 @@ function changeDate(newDate) {
     }
 }
 
-function loadDoctorSlots(doctorId, demoMode = false) {
+function loadDoctorSlots(doctorId) {
     if (!doctorId) return;
     
     const slotsSection = document.getElementById('slotsSection');
     const container = document.getElementById('slotsContainer');
-    const demoNotice = document.getElementById('demoNotice');
     
     slotsSection.classList.remove('hidden');
     container.innerHTML = `
@@ -406,7 +402,7 @@ function loadDoctorSlots(doctorId, demoMode = false) {
         </div>
     `;
 
-    fetch(`book_appointment.php?action=get_slots&doctor_id=${doctorId}&date=${currentTargetDate}${demoMode ? '&demo=1' : ''}`)
+    fetch(`book_appointment.php?action=get_slots&doctor_id=${doctorId}&date=${currentTargetDate}`)
         .then(res => res.json())
         .then(res => {
             if (!res.success) {
@@ -420,9 +416,6 @@ function loadDoctorSlots(doctorId, demoMode = false) {
             if (document.getElementById('slotDateLabel') && data.date_label) {
                 document.getElementById('slotDateLabel').innerText = data.date_label;
             }
-            
-            // Show demo notice if after hours
-            demoNotice.classList.remove('hidden');
 
             if (slots.length === 0) {
                 container.innerHTML = `

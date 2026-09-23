@@ -1,15 +1,8 @@
 -- MySQL Schema for Hospital Queue Management System
-
--- Drop existing tables if re-running
-SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS queue_tokens;
-DROP TABLE IF EXISTS patients;
-DROP TABLE IF EXISTS doctors;
-DROP TABLE IF EXISTS users;
-SET FOREIGN_KEY_CHECKS = 1;
+-- Safe schema initialization without DROP TABLE
 
 -- Users Table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     role VARCHAR(20) NOT NULL, -- Receptionist, Doctor, Admin
@@ -19,7 +12,7 @@ CREATE TABLE users (
 );
 
 -- Doctors Table
-CREATE TABLE doctors (
+CREATE TABLE IF NOT EXISTS doctors (
     doctor_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     specialization VARCHAR(100) NOT NULL,
@@ -32,11 +25,8 @@ CREATE TABLE doctors (
     booking_slot_percentage INT NOT NULL DEFAULT 70
 );
 
--- Add foreign key now that doctors table exists
-ALTER TABLE users ADD CONSTRAINT fk_user_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE SET NULL;
-
 -- Patients Table
-CREATE TABLE patients (
+CREATE TABLE IF NOT EXISTS patients (
     patient_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(10) NOT NULL,
@@ -45,15 +35,15 @@ CREATE TABLE patients (
 );
 
 -- Queue Tokens Table
-CREATE TABLE queue_tokens (
+CREATE TABLE IF NOT EXISTS queue_tokens (
     token_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT,
     doctor_id INT,
     token_number VARCHAR(20) NULL,
     booking_ref VARCHAR(20) NULL,
-    booking_type VARCHAR(20) NOT NULL DEFAULT 'Walk-in', -- 'Walk-in' or 'Pre-Booked'
+    booking_type VARCHAR(20) NOT NULL DEFAULT 'Walk-in',
     scheduled_time DATETIME NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'Waiting', -- Status: Waiting, In-Progress, Completed, No-Show, Cancelled, Booked
+    status VARCHAR(20) NOT NULL DEFAULT 'Waiting',
     arrival_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     arrival_date DATE NOT NULL,
     service_start_time TIMESTAMP NULL,

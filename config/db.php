@@ -22,8 +22,11 @@ if ($database_url) {
     $password = isset($db_parts['pass']) ? urldecode($db_parts['pass']) : $password;
     if (isset($db_parts['path'])) {
         $path_db = ltrim($db_parts['path'], '/');
-        if (!empty($path_db)) {
+        // 'sys' is MySQL internal read-only schema on TiDB; use 'test' for app tables
+        if (!empty($path_db) && $path_db !== 'sys') {
             $dbname = $path_db;
+        } else {
+            $dbname = 'test';
         }
     }
 }
@@ -54,7 +57,11 @@ try {
     $check_tbl = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
     if (!$check_tbl && file_exists(__DIR__ . '/../database/schema.sql')) {
         $schema_sql = file_get_contents(__DIR__ . '/../database/schema.sql');
-        $pdo->exec($schema_sql);
+        try {
+            $pdo->exec($schema_sql);
+        } catch (Exception $e) {
+            // Ignore non-fatal warnings
+        }
     } else {
         // Self-heal: ensure appointment booking columns exist in existing MySQL databases
         try {

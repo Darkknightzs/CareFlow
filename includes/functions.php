@@ -237,4 +237,84 @@ function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false, $targe
         'walkin_capacity' => $total_capacity - $bookable_capacity
     ];
 }
+
+/**
+ * Automatically promotes the next eligible 'Waiting' patient to 'In-Progress'
+ * for a given doctor if the doctor is not currently serving any patient.
+ * Uses atomic transaction locking to prevent race conditions or double-promotions.
+ *
+ * @param PDO $pdo
+ * @param int $doctor_id
+ * @return int|null The token_id promoted, or null if no promotion occurred.
+ */
+function autoPromoteNextPatient($pdo, $doctor_id) {
+    $doctor_id = (int)$doctor_id;
+    if ($doctor_id <= 0) return null;
+
+    try {
+        $started_transaction = false;
+        if (!$pdo->inTransaction()) {
+            $pdo->beginTransaction();
+            $started_transaction = true;
+        }
+
+        // 1. Check if there is already an 'In-Progress' patient for this doctor today
+        $in_prog_stmt = $pdo->prepare("
+            SELECT token_id FROM queue_tokens 
+            WHERE doctor_id = ? 
+            AND status = 'In-Progress' 
+            AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
+            LIMIT 1
+        ");
+        $in_prog_stmt->execute([$doctor_id]);
+        $has_in_progress = $in_prog_stmt->fetchColumn();
+
+        if ($has_in_progress) {
+            if ($started_transaction && $pdo->inTransaction()) {
+                $pdo->commit();
+            }
+            return null;
+        }
+
+        // 2. Find the next eligible 'Waiting' patient by effective time
+        // Only checked-in tokens (token_number IS NOT NULL) qualify
+        $next_stmt = $pdo->prepare("
+            SELECT token_id FROM queue_tokens 
+            WHERE doctor_id = ? 
+            AND status = 'Waiting' 
+            AND token_number IS NOT NULL 
+            AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
+            ORDER BY COALESCE(scheduled_time, arrival_time) ASC 
+            LIMIT 1
+        ");
+        $next_stmt->execute([$doctor_id]);
+        $next_token_id = $next_stmt->fetchColumn();
+
+        if ($next_token_id) {
+            // Atomic update: only update if STILL 'Waiting'
+            $upd = $pdo->prepare("
+                UPDATE queue_tokens 
+                SET status = 'In-Progress', service_start_time = CURRENT_TIMESTAMP 
+                WHERE token_id = ? AND status = 'Waiting'
+            ");
+            $upd->execute([$next_token_id]);
+            
+            if ($started_transaction && $pdo->inTransaction()) {
+                $pdo->commit();
+            }
+            return (int)$next_token_id;
+        }
+
+        if ($started_transaction && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+        return null;
+    } catch (Exception $e) {
+        if (isset($started_transaction) && $started_transaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        error_log("autoPromoteNextPatient error: " . $e->getMessage());
+        return null;
+    }
+}
 ?>

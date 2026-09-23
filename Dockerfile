@@ -3,7 +3,10 @@ FROM php:8.2-apache
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Install PDO MySQL and SQLite extensions
+# Install system dependencies & CA certificates for Cloud DB SSL
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Install PDO MySQL extension
 RUN docker-php-ext-install pdo pdo_mysql
 
 # Configure Apache DocumentRoot to point to /var/www/html/public

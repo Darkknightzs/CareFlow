@@ -1,5 +1,6 @@
 <?php
 require_once '../config/db.php';
+require_once '../includes/functions.php';
 
 $is_ajax = isset($_GET['ajax']);
 
@@ -15,60 +16,36 @@ if (!isset($_SESSION['user_logged_in']) || $_SESSION['user_role'] !== 'Doctor') 
 
 $doctor_id = $_SESSION['doctor_id'] ?? 0;
 
-// Handle Next, Complete, and No-Show workflow actions
+// Handle doctor actions (Finish, Absent, Cancel) with immediate auto-promotion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
     $token_id = isset($_POST['token_id']) ? (int)$_POST['token_id'] : 0;
 
-    // Helper closure to auto-call the next waiting patient
-    $call_next_patient = function($pdo, $doctor_id) {
-        $next_stmt = $pdo->prepare("
-            SELECT token_id FROM queue_tokens 
-            WHERE doctor_id = ? AND status = 'Waiting' AND token_number IS NOT NULL AND (arrival_date = CURRENT_DATE OR DATE(arrival_time) = CURRENT_DATE)
-            ORDER BY COALESCE(scheduled_time, arrival_time) ASC LIMIT 1
-        ");
-        $next_stmt->execute([$doctor_id]);
-        $next_token_id = $next_stmt->fetchColumn();
-        if ($next_token_id) {
-            $upd = $pdo->prepare("UPDATE queue_tokens SET status = 'In-Progress', service_start_time = CURRENT_TIMESTAMP WHERE token_id = ?");
-            $upd->execute([$next_token_id]);
-        }
-    };
-
-    if ($action === 'call_next') {
-        // Call the first waiting patient
-        $call_next_patient($pdo, $doctor_id);
-    } elseif ($action === 'complete_and_next') {
+    if ($action === 'finish' || $action === 'complete_and_next' || $action === 'complete_only') {
         if ($token_id > 0) {
             $stmt = $pdo->prepare("UPDATE queue_tokens SET status = 'Completed', service_end_time = CURRENT_TIMESTAMP WHERE token_id = ? AND doctor_id = ?");
             $stmt->execute([$token_id, $doctor_id]);
         }
-        $call_next_patient($pdo, $doctor_id);
-    } elseif ($action === 'complete_only') {
-        if ($token_id > 0) {
-            $stmt = $pdo->prepare("UPDATE queue_tokens SET status = 'Completed', service_end_time = CURRENT_TIMESTAMP WHERE token_id = ? AND doctor_id = ?");
-            $stmt->execute([$token_id, $doctor_id]);
-        }
-    } elseif ($action === 'noshow_and_next') {
+        autoPromoteNextPatient($pdo, $doctor_id);
+    } elseif ($action === 'absent' || $action === 'noshow_and_next' || $action === 'noshow') {
         if ($token_id > 0) {
             $stmt = $pdo->prepare("UPDATE queue_tokens SET status = 'No-Show' WHERE token_id = ? AND doctor_id = ?");
             $stmt->execute([$token_id, $doctor_id]);
         }
-        $call_next_patient($pdo, $doctor_id);
-    } elseif ($action === 'noshow') {
-        if ($token_id > 0) {
-            $stmt = $pdo->prepare("UPDATE queue_tokens SET status = 'No-Show' WHERE token_id = ? AND doctor_id = ? AND status = 'Waiting'");
-            $stmt->execute([$token_id, $doctor_id]);
-        }
+        autoPromoteNextPatient($pdo, $doctor_id);
     } elseif ($action === 'cancel') {
         if ($token_id > 0) {
             $stmt = $pdo->prepare("UPDATE queue_tokens SET status = 'Cancelled' WHERE token_id = ? AND doctor_id = ? AND status = 'Waiting'");
             $stmt->execute([$token_id, $doctor_id]);
         }
+        autoPromoteNextPatient($pdo, $doctor_id);
     }
     header("Location: dashboard.php");
     exit;
 }
+
+// Self-healing auto-promotion: ensures first patient or fresh session is promoted automatically
+autoPromoteNextPatient($pdo, $doctor_id);
 
 // Fetch doctor details
 $doc_stmt = $pdo->prepare("SELECT name, specialization, room_number FROM doctors WHERE doctor_id = ?");
@@ -217,22 +194,16 @@ if (!$is_ajax):
                 <form method="POST" class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
                     <input type="hidden" name="token_id" value="<?= $current_patient['token_id'] ?>">
                     
-                    <!-- Primary: Complete & Call Next -->
-                    <button type="submit" name="action" value="complete_and_next" class="flex-1 sm:flex-initial btn-primary !py-3 !px-6 text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30">
+                    <!-- Primary: Finish (Auto-Promotes Next) -->
+                    <button type="submit" name="action" value="finish" class="flex-1 sm:flex-initial btn-primary !py-3 !px-6 text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30">
                         <i class="ph ph-check-circle text-lg font-bold"></i>
-                        <span>Complete & Call Next</span>
-                        <i class="ph ph-arrow-right text-xs"></i>
+                        <span>Finish</span>
                     </button>
 
-                    <!-- Secondary: No-Show & Call Next -->
-                    <button type="submit" name="action" value="noshow_and_next" class="bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/60 dark:hover:bg-amber-900/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-bold text-sm py-3 px-4 rounded-2xl transition-all flex items-center gap-2" title="Mark patient as absent and call the next waiting patient">
+                    <!-- Secondary: Absent / No-Show (Auto-Promotes Next) -->
+                    <button type="submit" name="action" value="absent" class="bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/60 dark:hover:bg-amber-900/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-bold text-sm py-3 px-5 rounded-2xl transition-all flex items-center gap-2" title="Mark current patient as absent and auto-promote next waiting patient">
                         <i class="ph ph-user-minus text-base"></i>
-                        <span>No-Show & Next</span>
-                    </button>
-
-                    <!-- Finish Only (without calling next) -->
-                    <button type="submit" name="action" value="complete_only" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm py-3 px-4 rounded-2xl transition-all" title="Complete consultation without immediately calling next patient">
-                        <span>Finish Only</span>
+                        <span>Absent</span>
                     </button>
                 </form>
             </div>
@@ -243,22 +214,14 @@ if (!$is_ajax):
                         <i class="ph ph-user-check text-2xl"></i>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Ready for Next Consultation</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400"><?= $waiting ?> patient(s) waiting in queue</p>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Waiting for Patients</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400"><?= $waiting ?> patient(s) waiting in queue • Auto-promotes on check-in</p>
                     </div>
                 </div>
                 
-                <?php if ($waiting > 0): ?>
-                    <form method="POST">
-                        <button type="submit" name="action" value="call_next" class="btn-primary !py-3 !px-7 text-sm font-bold flex items-center gap-2 shadow-lg shadow-brand-500/30">
-                            <i class="ph ph-megaphone text-lg"></i>
-                            <span>Call Next Patient</span>
-                            <i class="ph ph-arrow-right text-xs"></i>
-                        </button>
-                    </form>
-                <?php else: ?>
-                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl">No Patients Waiting</span>
-                <?php endif; ?>
+                <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl">
+                    <?= $waiting > 0 ? 'Queue Active' : 'No Patients Waiting' ?>
+                </span>
             </div>
         <?php endif; ?>
     </div>
@@ -390,10 +353,13 @@ if (!$is_ajax):
                                 <?php if ($token['status'] === 'Waiting'): ?>
                                     <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">In Queue</span>
                                 <?php elseif ($token['status'] === 'In-Progress'): ?>
-                                    <form method="POST" class="inline">
+                                    <form method="POST" class="inline-flex items-center gap-1.5">
                                         <input type="hidden" name="token_id" value="<?= $token['token_id'] ?>">
-                                        <button type="submit" name="action" value="complete_and_next" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-1.5 px-3.5 rounded-lg transition-all shadow-sm inline-flex items-center gap-1">
-                                            <i class="ph ph-check"></i> Complete & Next
+                                        <button type="submit" name="action" value="finish" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-all shadow-sm inline-flex items-center gap-1" title="Finish consultation">
+                                            <i class="ph ph-check"></i> Finish
+                                        </button>
+                                        <button type="submit" name="action" value="absent" class="bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-300 text-xs font-bold py-1.5 px-2.5 rounded-lg transition-all border border-amber-300 dark:border-amber-800 inline-flex items-center gap-1" title="Patient absent / no-show">
+                                            <i class="ph ph-user-minus"></i> Absent
                                         </button>
                                     </form>
                                 <?php else: ?>

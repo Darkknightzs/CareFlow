@@ -32,7 +32,7 @@ $dr_ortho = $dr_ortho ?? ($doctors[2]['doctor_id'] ?? $doctors[0]['doctor_id']);
 // Realistic dummy patient data strictly following real clinic timeline:
 // [Completed / Past No-Shows] -> [Currently In-Progress] -> [Waiting Patients]
 $dummy_patients = [
-    // General OPD (Dr. Smith)
+    // General OPD (Dr. Rajesh Sharma)
     ['name' => 'Aarav Sharma',      'phone' => '9876543201', 'age' => 34, 'gender' => 'Male',   'doc' => $dr_gen_opd, 'prefix' => 'GEN', 'status' => 'Completed'],
     ['name' => 'Priya Patel',       'phone' => '9876543202', 'age' => 28, 'gender' => 'Female', 'doc' => $dr_gen_opd, 'prefix' => 'GEN', 'status' => 'Completed'],
     ['name' => 'Kunal Kapoor',      'phone' => '9876543203', 'age' => 39, 'gender' => 'Male',   'doc' => $dr_gen_opd, 'prefix' => 'GEN', 'status' => 'No-Show'],
@@ -42,31 +42,26 @@ $dummy_patients = [
     ['name' => 'Sunita Rao',        'phone' => '9876543207', 'age' => 41, 'gender' => 'Female', 'doc' => $dr_gen_opd, 'prefix' => 'GEN', 'status' => 'Waiting'],
     ['name' => 'Meera Joshi',       'phone' => '9876543208', 'age' => 31, 'gender' => 'Female', 'doc' => $dr_gen_opd, 'prefix' => 'GEN', 'status' => 'Waiting'],
 
-    // Cardiology (Dr. Andrew)
-    ['name' => 'Michael Wilson',    'phone' => '9876543211', 'age' => 58, 'gender' => 'Male',   'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'Completed'],
-    ['name' => 'Robert Johnson',    'phone' => '9876543212', 'age' => 49, 'gender' => 'Male',   'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'No-Show'],
-    ['name' => 'David Miller',      'phone' => '9876543213', 'age' => 63, 'gender' => 'Male',   'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'Completed'],
-    ['name' => 'Sarah Brown',       'phone' => '9876543214', 'age' => 60, 'gender' => 'Female', 'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'In-Progress'],
-    ['name' => 'James Taylor',      'phone' => '9876543215', 'age' => 55, 'gender' => 'Male',   'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'Waiting'],
-    ['name' => 'Susan White',       'phone' => '9876543216', 'age' => 62, 'gender' => 'Female', 'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'Waiting'],
+    // Cardiology (Dr. Ananya Mukherjee)
+    ['name' => 'Manish Tiwari',     'phone' => '9876543211', 'age' => 58, 'gender' => 'Male',   'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'Completed'],
+    ['name' => 'Rajendra Prasad',   'phone' => '9876543212', 'age' => 61, 'gender' => 'Male',   'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'No-Show'],
+    ['name' => 'Suresh Aggarwal',   'phone' => '9876543213', 'age' => 63, 'gender' => 'Male',   'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'Completed'],
+    ['name' => 'Pooja Chawla',      'phone' => '9876543214', 'age' => 48, 'gender' => 'Female', 'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'In-Progress'],
+    ['name' => 'Harish Chandra',    'phone' => '9876543215', 'age' => 55, 'gender' => 'Male',   'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'Waiting'],
+    ['name' => 'Shobha Nambiar',    'phone' => '9876543216', 'age' => 62, 'gender' => 'Female', 'doc' => $dr_cardio,  'prefix' => 'CAR', 'status' => 'Waiting'],
 
-    // Orthopedics (Dr. Shawn)
-    ['name' => 'Alexander Scott',   'phone' => '9876543221', 'age' => 35, 'gender' => 'Male',   'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'Completed'],
-    ['name' => 'Sophia Turner',     'phone' => '9876543222', 'age' => 42, 'gender' => 'Female', 'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'Completed'],
-    ['name' => 'Daniel Craig',      'phone' => '9876543223', 'age' => 38, 'gender' => 'Male',   'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'In-Progress'],
-    ['name' => 'Emily Watson',      'phone' => '9876543224', 'age' => 29, 'gender' => 'Female', 'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'Waiting'],
-    ['name' => 'Lucas Garcia',      'phone' => '9876543225', 'age' => 27, 'gender' => 'Male',   'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'Waiting']
+    // Orthopedics (Dr. Vikram Verma)
+    ['name' => 'Amitabh Saxena',    'phone' => '9876543221', 'age' => 35, 'gender' => 'Male',   'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'Completed'],
+    ['name' => 'Deepika Padukone',  'phone' => '9876543222', 'age' => 36, 'gender' => 'Female', 'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'Completed'],
+    ['name' => 'Gaurav Kulkarni',   'phone' => '9876543223', 'age' => 38, 'gender' => 'Male',   'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'In-Progress'],
+    ['name' => 'Neha Singhania',    'phone' => '9876543224', 'age' => 29, 'gender' => 'Female', 'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'Waiting'],
+    ['name' => 'Devendra Bisht',    'phone' => '9876543225', 'age' => 43, 'gender' => 'Male',   'doc' => $dr_ortho,   'prefix' => 'ORT', 'status' => 'Waiting']
 ];
 
-if ($GLOBALS['DB_ENGINE'] === 'sqlite') {
-    $pdo->exec("DELETE FROM queue_tokens");
-    $pdo->exec("DELETE FROM patients");
-} else {
-    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
-    $pdo->exec("TRUNCATE TABLE queue_tokens");
-    $pdo->exec("TRUNCATE TABLE patients");
-    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
-}
+$pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+$pdo->exec("TRUNCATE TABLE queue_tokens");
+$pdo->exec("TRUNCATE TABLE patients");
+$pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
 $current_date = date('Y-m-d');
 $base_time = strtotime("$current_date 09:00:00");

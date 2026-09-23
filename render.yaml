@@ -7,5 +7,6 @@ services:
     buildCommand: ""
     startCommand: ""
     envVars:
-      - key: DB_DRIVER
-        value: sqlite
+      - key: DATABASE_URL
+        sync: false
+

@@ -23,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($action === 'finish' || $action === 'complete_and_next' || $action === 'complete_only') {
         if ($token_id > 0) {
-            $stmt = $pdo->prepare("UPDATE queue_tokens SET status = 'Completed', service_end_time = CURRENT_TIMESTAMP WHERE token_id = ? AND doctor_id = ?");
-            $stmt->execute([$token_id, $doctor_id]);
+            $stmt = $pdo->prepare("UPDATE queue_tokens SET status = 'Completed', service_end_time = ? WHERE token_id = ? AND doctor_id = ?");
+            $stmt->execute([date('Y-m-d H:i:s'), $token_id, $doctor_id]);
         }
         autoPromoteNextPatient($pdo, $doctor_id);
     } elseif ($action === 'absent' || $action === 'noshow_and_next' || $action === 'noshow') {
@@ -226,42 +226,27 @@ if (!$is_ajax):
         <?php endif; ?>
     </div>
 
-    <!-- Stats Row -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-        <div class="glass-card p-6 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                <i class="ph ph-users text-2xl"></i>
+    <!-- Single Focused Stat Card: Patients in Queue -->
+    <div class="mb-8">
+        <div class="glass-card p-6 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-6 border border-white/60 dark:border-slate-700/50 shadow-md">
+            <div class="flex items-center gap-5">
+                <div class="w-16 h-16 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shadow-inner">
+                    <i class="ph ph-hourglass-high text-3xl"></i>
+                </div>
+                <div>
+                    <span class="text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Patients In Queue</span>
+                    <div class="flex items-baseline gap-3">
+                        <span class="text-4xl font-black text-slate-800 dark:text-white tracking-tight"><?= $waiting ?></span>
+                        <span class="text-sm font-bold text-slate-500 dark:text-slate-400">waiting for consultation</span>
+                    </div>
+                </div>
             </div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Total Today</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white"><?= $total_patients ?></p>
-            </div>
-        </div>
-        <div class="glass-card p-6 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/50 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
-                <i class="ph ph-hourglass-high text-2xl"></i>
-            </div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Waiting</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white"><?= $waiting ?></p>
-            </div>
-        </div>
-        <div class="glass-card p-6 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600 dark:text-brand-400">
-                <i class="ph ph-pulse text-2xl"></i>
-            </div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">In Progress</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white"><?= $in_progress ?></p>
-            </div>
-        </div>
-        <div class="glass-card p-6 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <i class="ph ph-check-circle text-2xl"></i>
-            </div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Completed</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white"><?= $completed ?></p>
+            
+            <div class="flex items-center gap-3 bg-slate-100/80 dark:bg-slate-800/80 px-5 py-3 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
+                <span class="w-2.5 h-2.5 rounded-full <?= $waiting > 0 ? 'bg-amber-500 animate-ping' : 'bg-slate-400' ?>"></span>
+                <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <?= $waiting > 0 ? 'Queue Active' : 'No Pending Patients' ?>
+                </span>
             </div>
         </div>
     </div>
@@ -353,17 +338,11 @@ if (!$is_ajax):
                                 <?php if ($token['status'] === 'Waiting'): ?>
                                     <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">In Queue</span>
                                 <?php elseif ($token['status'] === 'In-Progress'): ?>
-                                    <form method="POST" class="inline-flex items-center gap-1.5">
-                                        <input type="hidden" name="token_id" value="<?= $token['token_id'] ?>">
-                                        <button type="submit" name="action" value="finish" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-all shadow-sm inline-flex items-center gap-1" title="Finish consultation">
-                                            <i class="ph ph-check"></i> Finish
-                                        </button>
-                                        <button type="submit" name="action" value="absent" class="bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-300 text-xs font-bold py-1.5 px-2.5 rounded-lg transition-all border border-amber-300 dark:border-amber-800 inline-flex items-center gap-1" title="Patient absent / no-show">
-                                            <i class="ph ph-user-minus"></i> Absent
-                                        </button>
-                                    </form>
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 text-xs font-bold border border-brand-200 dark:border-brand-800">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping"></span> Active Now
+                                    </span>
                                 <?php else: ?>
-                                    <span class="text-[11px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-widest px-3 py-1.5">Done</span>
+                                    <span class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Done</span>
                                 <?php endif; ?>
                             </td>
                         </tr>

@@ -66,15 +66,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wait_data = calculateDynamicWait($pdo, $doctor_id);
         $est_wait = $wait_data['total_wait'];
 
-        // 4. Insert Queue Token
+        // 4. Insert Queue Token with explicit IST timestamp
+        $ist_now = date('Y-m-d H:i:s');
+        $ist_today = date('Y-m-d');
         $insertToken = $pdo->prepare("
             INSERT INTO queue_tokens 
-            (patient_id, doctor_id, token_number, estimated_wait_time, arrival_date) 
-            VALUES (?, ?, ?, ?, CURRENT_DATE)
+            (patient_id, doctor_id, token_number, estimated_wait_time, arrival_time, arrival_date) 
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
-        $insertToken->execute([$patient_id, $doctor_id, $token_number, $est_wait]);
+        $insertToken->execute([$patient_id, $doctor_id, $token_number, $est_wait, $ist_now, $ist_today]);
 
         $pdo->commit();
+
+        // If doctor currently has no in-progress patient, promote immediately
+        autoPromoteNextPatient($pdo, $doctor_id);
 
         header("Location: checkin.php?success=1&token=" . urlencode($token_number) . "&wait=" . urlencode($est_wait));
         exit;

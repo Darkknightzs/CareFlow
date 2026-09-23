@@ -47,6 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 $pdo->commit();
 
+                // If doctor currently has no in-progress patient, promote immediately
+                autoPromoteNextPatient($pdo, (int)$booking['doctor_id']);
+
                 header("Location: checkin.php?success=1&token=" . urlencode($token_number) . "&wait=" . urlencode($est_wait) . "&converted=1&ref=" . urlencode($booking['booking_ref']));
                 exit;
             } catch (Exception $e) {
@@ -133,17 +136,17 @@ include '../includes/header.php';
                 </div>
             </div>
 
-            <!-- Tab Navigation -->
-            <div class="flex border-b border-slate-200 dark:border-slate-700 mb-5 gap-2">
-                <button type="button" onclick="switchTab('walkin')" id="tab-btn-walkin" class="py-2.5 px-4 font-bold text-xs rounded-t-xl transition-all flex items-center gap-1.5 <?= $active_tab === 'walkin' ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 border-t-2 border-brand-600 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white' ?>">
+            <!-- Tab Navigation (Modern Segmented Controller) -->
+            <div class="p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-6 flex gap-1 border border-slate-200 dark:border-slate-700/60 shadow-inner">
+                <button type="button" onclick="switchTab('walkin')" id="tab-btn-walkin" class="flex-1 py-2 px-4 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 <?= $active_tab === 'walkin' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm border border-slate-200/50 dark:border-slate-600' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white' ?>">
                     <i class="ph ph-user-plus text-base"></i>
                     <span>1. Walk-in Check-in</span>
                 </button>
-                <button type="button" onclick="switchTab('booking')" id="tab-btn-booking" class="py-2.5 px-4 font-bold text-xs rounded-t-xl transition-all flex items-center gap-1.5 relative <?= $active_tab === 'booking' ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 border-t-2 border-brand-600 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white' ?>">
+                <button type="button" onclick="switchTab('booking')" id="tab-btn-booking" class="flex-1 py-2 px-4 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 relative <?= $active_tab === 'booking' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm border border-slate-200/50 dark:border-slate-600' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white' ?>">
                     <i class="ph ph-calendar-check text-base"></i>
                     <span>2. Convert Booking</span>
                     <?php if (count($pending_bookings) > 0): ?>
-                        <span class="w-4 h-4 rounded-full bg-brand-600 text-white text-[9px] font-black inline-flex items-center justify-center"><?= count($pending_bookings) ?></span>
+                        <span class="w-4 h-4 rounded-full bg-brand-600 text-white text-[9px] font-black inline-flex items-center justify-center ml-1"><?= count($pending_bookings) ?></span>
                     <?php endif; ?>
                 </button>
             </div>
@@ -429,14 +432,17 @@ function switchTab(tab) {
     const walkinContent = document.getElementById('tab-content-walkin');
     const bookingContent = document.getElementById('tab-content-booking');
 
+    const activeClass = 'flex-1 py-2 px-4 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm border border-slate-200/50 dark:border-slate-600';
+    const inactiveClass = 'flex-1 py-2 px-4 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white';
+
     if (tab === 'walkin') {
-        walkinBtn.className = 'py-2.5 px-4 font-bold text-xs rounded-t-xl transition-all flex items-center gap-1.5 bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 border-t-2 border-brand-600 shadow-xs';
-        bookingBtn.className = 'py-2.5 px-4 font-bold text-xs rounded-t-xl transition-all flex items-center gap-1.5 relative text-slate-500 hover:text-slate-800 dark:hover:text-white';
+        walkinBtn.className = activeClass;
+        bookingBtn.className = inactiveClass + ' relative';
         walkinContent.classList.remove('hidden');
         bookingContent.classList.add('hidden');
     } else {
-        bookingBtn.className = 'py-2.5 px-4 font-bold text-xs rounded-t-xl transition-all flex items-center gap-1.5 relative bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 border-t-2 border-brand-600 shadow-xs';
-        walkinBtn.className = 'py-2.5 px-4 font-bold text-xs rounded-t-xl transition-all flex items-center gap-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white';
+        bookingBtn.className = activeClass + ' relative';
+        walkinBtn.className = inactiveClass;
         bookingContent.classList.remove('hidden');
         walkinContent.classList.add('hidden');
     }

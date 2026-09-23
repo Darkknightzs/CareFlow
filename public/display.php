@@ -9,7 +9,12 @@ $is_ajax = isset($_GET['ajax']);
 $dept_stmt = $pdo->query("SELECT doctor_id, specialization, avg_service_time_in_minutes as avg_time FROM doctors");
 $departments_raw = $dept_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch all tokens for today
+// Auto-promote next waiting patient for any doctor who is free right now
+foreach ($departments_raw as $d_info) {
+    autoPromoteNextPatient($pdo, (int)$d_info['doctor_id']);
+}
+
+// Fetch all tokens for today (after any promotions)
 $stmt = $pdo->query("
     SELECT qt.*, d.specialization, d.room_number 
     FROM queue_tokens qt

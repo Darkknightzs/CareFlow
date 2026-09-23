@@ -113,24 +113,24 @@ include '../includes/header.php';
 
         <?php if ($search_result): ?>
             <!-- Horizontal Split Status Card -->
-            <div class="bg-slate-50/80 border border-slate-200 p-4 md:p-5 rounded-xl mb-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            <div class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-4 md:p-5 rounded-xl mb-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center shadow-xs">
                 
                 <!-- Left Column: Token / Booking Badge -->
-                <div class="md:col-span-5 bg-white border border-brand-100 rounded-xl p-4 text-center flex flex-col justify-center items-center shadow-xs">
+                <div class="md:col-span-5 bg-white dark:bg-slate-900/90 border border-brand-100 dark:border-slate-700/80 rounded-xl p-4 text-center flex flex-col justify-center items-center shadow-xs">
                     <?php if ($search_result['status'] === 'Booked'): ?>
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Booking Reference</span>
-                        <span class="text-4xl md:text-5xl font-black text-indigo-600 tracking-tight my-1.5"><?= htmlspecialchars($search_result['booking_ref']) ?></span>
+                        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Booking Reference</span>
+                        <span class="text-4xl md:text-5xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight my-1.5"><?= htmlspecialchars($search_result['booking_ref']) ?></span>
                         <div class="mt-1.5 w-full">
-                            <span class="inline-flex items-center justify-center gap-1 w-full bg-indigo-100 text-indigo-800 border border-indigo-200 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
+                            <span class="inline-flex items-center justify-center gap-1 w-full bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
                                 <i class="ph-fill ph-calendar text-xs"></i> Booked
                             </span>
                         </div>
                     <?php else: ?>
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Token Number</span>
-                        <span class="text-4xl md:text-5xl font-black text-brand-600 tracking-tight my-1.5"><?= htmlspecialchars($search_result['token_number']) ?></span>
+                        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Token Number</span>
+                        <span class="text-4xl md:text-5xl font-black text-brand-600 dark:text-brand-400 tracking-tight my-1.5"><?= htmlspecialchars($search_result['token_number']) ?></span>
                         <div class="mt-1.5 w-full">
                             <?php if ($search_result['status'] === 'Waiting'): ?>
-                                <span class="inline-flex items-center justify-center gap-1 w-full bg-yellow-100 text-yellow-800 border border-yellow-300 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
+                                <span class="inline-flex items-center justify-center gap-1 w-full bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
                                     <i class="ph-fill ph-clock text-xs"></i> Waiting
                                 </span>
                             <?php elseif ($search_result['status'] === 'In-Progress'): ?>
@@ -138,7 +138,7 @@ include '../includes/header.php';
                                     <i class="ph-fill ph-check-circle text-xs"></i> It's Your Turn!
                                 </span>
                             <?php else: ?>
-                                <span class="inline-flex items-center justify-center gap-1 w-full bg-slate-200 text-slate-700 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
+                                <span class="inline-flex items-center justify-center gap-1 w-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
                                     <?= htmlspecialchars($search_result['status']) ?>
                                 </span>
                             <?php endif; ?>
@@ -147,36 +147,36 @@ include '../includes/header.php';
                 </div>
                 
                 <!-- Right Column: Patient & Queue Details -->
-                <div class="md:col-span-7 bg-white border border-slate-200/80 rounded-xl p-4 space-y-3 shadow-xs">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <span class="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Patient</span>
-                        <span class="text-slate-900 font-black text-sm"><?= htmlspecialchars($search_result['patient_name']) ?></span>
+                <div class="md:col-span-7 bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-4 space-y-3 shadow-xs">
+                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
+                        <span class="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-wider">Patient</span>
+                        <span class="text-slate-900 dark:text-white font-black text-sm"><?= htmlspecialchars($search_result['patient_name']) ?></span>
                     </div>
                     
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <span class="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Department</span>
-                        <span class="text-slate-800 font-bold text-xs"><?= htmlspecialchars($search_result['department']) ?> • <?= htmlspecialchars($search_result['doctor_name']) ?></span>
+                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
+                        <span class="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-wider">Department</span>
+                        <span class="text-slate-800 dark:text-slate-200 font-bold text-xs"><?= htmlspecialchars($search_result['department']) ?> • <?= htmlspecialchars($search_result['doctor_name']) ?></span>
                     </div>
                     
                     <?php if ($search_result['status'] === 'Booked'): ?>
-                        <div class="bg-indigo-50/80 border border-indigo-200 p-3 rounded-lg text-center">
-                            <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block mb-0.5">Scheduled Appointment</span>
-                            <span class="text-2xl font-black text-indigo-900"><?= date('h:i A', strtotime($search_result['scheduled_time'])) ?></span>
-                            <span class="text-xs font-extrabold text-indigo-800 block mt-0.5">
+                        <div class="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 p-3 rounded-lg text-center">
+                            <span class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider block mb-0.5">Scheduled Appointment</span>
+                            <span class="text-2xl font-black text-indigo-900 dark:text-indigo-200"><?= date('h:i A', strtotime($search_result['scheduled_time'])) ?></span>
+                            <span class="text-xs font-extrabold text-indigo-800 dark:text-indigo-300 block mt-0.5">
                                 <?= (date('Y-m-d', strtotime($search_result['scheduled_time'])) === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow, ' : '' ?>
                                 <?= date('l, M d, Y', strtotime($search_result['scheduled_time'])) ?>
                             </span>
-                            <span class="text-[11px] text-indigo-700 block mt-1">Please arrive at least 10 mins before your slot and check in at the reception desk.</span>
+                            <span class="text-[11px] text-indigo-700 dark:text-indigo-400 block mt-1">Please arrive at least 10 mins before your slot and check in at the reception desk.</span>
                         </div>
                     <?php elseif ($search_result['status'] === 'Waiting'): ?>
                         <div class="grid grid-cols-2 gap-2 pt-0.5">
-                            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
-                                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Ahead</span>
-                                <span class="text-xl font-black text-slate-900"><?= $queue_position ?></span>
+                            <div class="bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+                                <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">Ahead</span>
+                                <span class="text-xl font-black text-slate-900 dark:text-white"><?= $queue_position ?></span>
                             </div>
-                            <div class="bg-brand-50/80 p-2.5 rounded-lg border border-brand-200 text-center">
-                                <span class="text-[9px] font-bold text-brand-700 uppercase tracking-wider block mb-0.5">Est. Wait</span>
-                                <span class="text-xl font-black text-brand-700"><?= $search_result['dynamic_wait'] ?>m</span>
+                            <div class="bg-brand-50/80 dark:bg-brand-950/40 p-2.5 rounded-lg border border-brand-200 dark:border-brand-800 text-center">
+                                <span class="text-[9px] font-bold text-brand-700 dark:text-brand-400 uppercase tracking-wider block mb-0.5">Est. Wait</span>
+                                <span class="text-xl font-black text-brand-700 dark:text-brand-300"><?= $search_result['dynamic_wait'] ?>m</span>
                             </div>
                         </div>
                     <?php elseif ($search_result['status'] === 'In-Progress'): ?>

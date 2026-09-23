@@ -53,6 +53,9 @@ try {
     $pdo = new PDO($dsn, $user, $password, $pdo_options);
     $GLOBALS['DB_ENGINE'] = 'mysql';
 
+    // Force MySQL connection session to IST (+05:30) so CURRENT_TIMESTAMP & NOW() match Indian Standard Time
+    @$pdo->exec("SET time_zone = '+05:30'");
+
     // Auto-create tables if this is a fresh database
     $check_tbl = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
     if (!$check_tbl && file_exists(__DIR__ . '/../database/schema.sql')) {

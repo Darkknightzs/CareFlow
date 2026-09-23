@@ -179,17 +179,7 @@ function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false, $targe
     $all_slots = array_merge($morning_slots, $evening_slots);
     $total_capacity = count($all_slots);
 
-    // 2. Calculate bookable capacity based on percentage (round down)
-    // Distribute proportionally across morning and evening
-    $morning_bookable_count = (int)floor(count($morning_slots) * ($pct / 100));
-    $evening_bookable_count = (int)floor(count($evening_slots) * ($pct / 100));
-
-    $bookable_morning = array_slice($morning_slots, 0, $morning_bookable_count);
-    $bookable_evening = array_slice($evening_slots, 0, $evening_bookable_count);
-    $bookable_slots = array_merge($bookable_morning, $bookable_evening);
-    $bookable_capacity = count($bookable_slots);
-
-    // 3. Fetch already booked slots for this doctor on the target date
+    // 2. Fetch already booked slots for this doctor on the target date
     $booked_stmt = $pdo->prepare("
         SELECT scheduled_time 
         FROM queue_tokens 
@@ -207,16 +197,43 @@ function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false, $targe
         $taken_times[date('H:i:s', strtotime($t))] = true;
     }
 
-    // 4. Filter slots: must be bookable, not taken, and in the future
-    // If target date is tomorrow, ALL slots are in the future!
+    // Realistic hospital requirement: First 2 slots of Evening OPD are pre-reserved
+    if (count($evening_slots) >= 2) {
+        $taken_times[$evening_slots[0]] = true; // e.g. 05:00 PM
+        $taken_times[$evening_slots[1]] = true; // e.g. 05:15 PM
+    }
+
+    // 3. Shift-End Over-Capacity Guard for Morning OPD
+    // If today and morning waiting queue estimated time exceeds 01:00 PM shift end, close morning slots
+    $morning_session_closed = false;
+    if ($is_today) {
+        $wait_info = calculateDynamicWait($pdo, $doctor_id);
+        $est_finish_time = $now_ts + ($wait_info['total_wait'] * 60);
+        $morning_end_ts = strtotime("$target_date " . $doc['working_end_time']);
+        if ($now_ts >= strtotime("$target_date 12:00:00") && $est_finish_time >= $morning_end_ts) {
+            $morning_session_closed = true;
+        }
+    }
+
+    // 4. Realistic 30-minute booking buffer for same-day appointments
+    $buffer_seconds = 30 * 60; // 30 minutes to travel to hospital
+
     $available_slots = [];
-    foreach ($bookable_slots as $slot_time) {
+    foreach ($all_slots as $slot_time) {
         $slot_ts = strtotime("$target_date $slot_time");
+        $is_morning = strtotime($slot_time) < strtotime('14:00:00');
+
+        // Skip if morning session is over-capacity
+        if ($is_morning && $morning_session_closed) {
+            continue;
+        }
+
         $is_taken = isset($taken_times[$slot_time]);
-        $is_future = ($ignore_past_filter || !$is_today) ? true : ($slot_ts > $now_ts);
+        $is_future = ($ignore_past_filter || !$is_today) 
+            ? true 
+            : ($slot_ts > ($now_ts + $buffer_seconds));
 
         if (!$is_taken && $is_future) {
-            $is_morning = strtotime($slot_time) < strtotime('14:00:00');
             $available_slots[] = [
                 'time_24' => $slot_time,
                 'time_12' => date('h:i A', $slot_ts),
@@ -233,8 +250,8 @@ function getAvailableSlots($pdo, $doctor_id, $ignore_past_filter = false, $targe
         'slots' => $available_slots,
         'doc' => $doc,
         'total_capacity' => $total_capacity,
-        'bookable_capacity' => $bookable_capacity,
-        'walkin_capacity' => $total_capacity - $bookable_capacity
+        'bookable_capacity' => count($available_slots),
+        'morning_closed' => $morning_session_closed
     ];
 }
 
@@ -294,10 +311,10 @@ function autoPromoteNextPatient($pdo, $doctor_id) {
             // Atomic update: only update if STILL 'Waiting'
             $upd = $pdo->prepare("
                 UPDATE queue_tokens 
-                SET status = 'In-Progress', service_start_time = CURRENT_TIMESTAMP 
+                SET status = 'In-Progress', service_start_time = ? 
                 WHERE token_id = ? AND status = 'Waiting'
             ");
-            $upd->execute([$next_token_id]);
+            $upd->execute([date('Y-m-d H:i:s'), $next_token_id]);
             
             if ($started_transaction && $pdo->inTransaction()) {
                 $pdo->commit();

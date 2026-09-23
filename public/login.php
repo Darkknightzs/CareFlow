@@ -24,9 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'dr.rajesh'  => ['pass' => 'rajesh123',  'name' => 'Dr. Rajesh Sharma',     'role' => 'Doctor',       'doctor_id' => 1],
         'dr.ananya'  => ['pass' => 'ananya123',  'name' => 'Dr. Ananya Mukherjee',  'role' => 'Doctor',       'doctor_id' => 2],
         'dr.vikram'  => ['pass' => 'vikram123',  'name' => 'Dr. Vikram Verma',      'role' => 'Doctor',       'doctor_id' => 3],
-        // Aliases for convenience
-        'dr.smith'   => ['pass' => 'smith123',   'name' => 'Dr. Rajesh Sharma',     'role' => 'Doctor',       'doctor_id' => 1],
-        'dr.andrew'  => ['pass' => 'andrew123',  'name' => 'Dr. Ananya Mukherjee',  'role' => 'Doctor',       'doctor_id' => 2],
     ];
 
     // Query database for user

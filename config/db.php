@@ -46,6 +46,8 @@ if ($is_cloud) {
     // On Linux / Docker containers, verify standard CA bundle path
     if (file_exists('/etc/ssl/certs/ca-certificates.crt')) {
         $pdo_options[PDO::MYSQL_ATTR_SSL_CA] = '/etc/ssl/certs/ca-certificates.crt';
+    } else {
+        $pdo_options[PDO::MYSQL_ATTR_SSL_CA] = '';
     }
 }
 

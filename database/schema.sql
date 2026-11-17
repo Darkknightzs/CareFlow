@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS patients (
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(10) NOT NULL,
     age INT,
-    gender VARCHAR(10)
+    gender VARCHAR(10),
+    INDEX idx_patient_phone (phone)
 );
 
 -- Queue Tokens Table
@@ -51,43 +52,25 @@ CREATE TABLE IF NOT EXISTS queue_tokens (
     estimated_wait_time INT NOT NULL DEFAULT 0,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
     FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE,
-    CONSTRAINT unique_token_per_day UNIQUE (token_number, arrival_date)
+    CONSTRAINT unique_token_per_day UNIQUE (token_number, arrival_date),
+    INDEX idx_queue_status (status),
+    INDEX idx_queue_date (arrival_time),
+    INDEX idx_booking_ref (booking_ref),
+    INDEX idx_scheduled_time (scheduled_time)
 );
 
--- Indexes for faster lookups
-CREATE INDEX idx_queue_status ON queue_tokens(status);
-CREATE INDEX idx_queue_date ON queue_tokens(arrival_time);
-CREATE INDEX idx_patient_phone ON patients(phone);
-CREATE INDEX idx_booking_ref ON queue_tokens(booking_ref);
-CREATE INDEX idx_scheduled_time ON queue_tokens(scheduled_time);
-
 -- Insert real doctors matching the UI/login demo
-INSERT INTO doctors (name, specialization, room_number, avg_service_time_in_minutes) VALUES
-('Dr. Rajesh Sharma', 'General OPD', 'Room 1', 15),
-('Dr. Ananya Mukherjee', 'Cardiology', 'Room 2', 20),
-('Dr. Vikram Verma', 'Orthopedics', 'Room 3', 15);
+INSERT IGNORE INTO doctors (doctor_id, name, specialization, room_number, avg_service_time_in_minutes) VALUES
+(1, 'Dr. Rajesh Sharma', 'General OPD', 'Room 1', 15),
+(2, 'Dr. Ananya Mukherjee', 'Cardiology', 'Room 2', 20),
+(3, 'Dr. Vikram Verma', 'Orthopedics', 'Room 3', 15);
 
 -- Insert real users matching the UI/login demo (passwords hashed)
 -- recept123
-INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
-('Receptionist', 'Receptionist', 'reception', '$2y$10$/sDFv5eHuxx9qp73JfnPmezQK4yL1C5ExUJcqP9zR0Y/p3k1VOK7q', NULL);
-
--- rajesh123 (and alias dr.rajesh / dr.smith)
-INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
-('Dr. Rajesh Sharma', 'Doctor', 'dr.rajesh', '$2y$10$0vGh7K5ZMMd6QLbRRbTNjuWzWVtyC8Rpa254L4KiV51gg2kB0AOZ.', 1);
-
--- ananya123 (and alias dr.ananya / dr.andrew)
-INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
-('Dr. Ananya Mukherjee', 'Doctor', 'dr.ananya', '$2y$10$ZiPeUz0W6WlpFa4gNbt1EuxkSZEIFAgjfT2tBkxsP6MwjtwomGxIS', 2);
-
--- vikram123 (Dr. Vikram Verma)
-INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
-('Dr. Vikram Verma', 'Doctor', 'dr.vikram', '$2y$10$58.e66F/pC2zD9W4s/zH5uP1s1uU904XW8y9Q8i2g1h3j4k5l6m7n', 3);
-
--- admin123
-INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
-('System Administrator', 'Admin', 'admin', '$2y$10$dsfbQKeFgFL7EWc0MMOcDe63IF/Taex/92e.UKqNxUcsQtIN6uBLO', NULL);
-
--- dark / dark (Hidden Administrator)
-INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
+INSERT IGNORE INTO users (name, role, username, password_hash, doctor_id) VALUES
+('Receptionist', 'Receptionist', 'reception', '$2y$10$/sDFv5eHuxx9qp73JfnPmezQK4yL1C5ExUJcqP9zR0Y/p3k1VOK7q', NULL),
+('Dr. Rajesh Sharma', 'Doctor', 'dr.rajesh', '$2y$10$0vGh7K5ZMMd6QLbRRbTNjuWzWVtyC8Rpa254L4KiV51gg2kB0AOZ.', 1),
+('Dr. Ananya Mukherjee', 'Doctor', 'dr.ananya', '$2y$10$ZiPeUz0W6WlpFa4gNbt1EuxkSZEIFAgjfT2tBkxsP6MwjtwomGxIS', 2),
+('Dr. Vikram Verma', 'Doctor', 'dr.vikram', '$2y$10$58.e66F/pC2zD9W4s/zH5uP1s1uU904XW8y9Q8i2g1h3j4k5l6m7n', 3),
+('System Administrator', 'Admin', 'admin', '$2y$10$dsfbQKeFgFL7EWc0MMOcDe63IF/Taex/92e.UKqNxUcsQtIN6uBLO', NULL),
 ('Dark', 'Admin', 'dark', '$2y$10$iMZZ6jVlq01nJjIvdnF4o.V4uR8wZ6j30gA9p0x.hM5qU8n7yZ7U6', NULL);

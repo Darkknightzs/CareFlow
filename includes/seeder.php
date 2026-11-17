@@ -28,7 +28,7 @@ function clearQueueData($pdo) {
 
 /**
  * Seed dataset from careflow_patient_dataset.csv
- * If $target_hour_minute is provided (e.g. "11:00" or null for as-is mapped to today),
+ * If $target_hour_minute is provided (e.g. "11:00", "now", or "full"),
  * it dynamically adjusts statuses based on the timeline.
  */
 function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
@@ -46,15 +46,22 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
     }
 
     $header = str_getcsv(array_shift($lines));
-    // Normalize header keys
     $col_map = array_flip($header);
 
-    // Map department to doctor_id
-    $doc_map = [
-        'General OPD' => 1,
-        'Cardiology' => 2,
-        'Orthopedics' => 3
-    ];
+    // Dynamically query doctors from DB to guarantee doctor_id and avg_time mapping
+    $doc_stmt = $pdo->query("SELECT doctor_id, specialization, avg_service_time_in_minutes FROM doctors");
+    $doc_map = [];
+    $doc_avg_time = [];
+    while ($d = $doc_stmt->fetch(PDO::FETCH_ASSOC)) {
+        $doc_map[$d['specialization']] = (int)$d['doctor_id'];
+        $doc_avg_time[(int)$d['doctor_id']] = (int)$d['avg_service_time_in_minutes'];
+    }
+    // Fallback if DB had no rows
+    if (empty($doc_map)) {
+        $doc_map = ['General OPD' => 1, 'Cardiology' => 2, 'Orthopedics' => 3];
+        $doc_avg_time = [1 => 15, 2 => 20, 3 => 15];
+    }
+
     $spec_prefix = [
         'General OPD' => 'GEN',
         'Cardiology' => 'CAR',
@@ -63,11 +70,23 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
 
     $today = date('Y-m-d');
     
-    // Determine simulation cutoff timestamp if provided
+    // Smart time parsing: supports "now", "11:00", "11:00 AM", "17:15", or "full"
     $cutoff_ts = null;
-    if ($simulate_time) {
-        // simulate_time e.g. "11:00" or "17:15"
-        $cutoff_ts = strtotime("$today $simulate_time:00");
+    $time_label = 'Full Timeline';
+    if ($simulate_time && strtolower($simulate_time) !== 'full') {
+        if (strtolower($simulate_time) === 'now') {
+            $cutoff_ts = time();
+            $time_label = date('h:i A', $cutoff_ts);
+        } else {
+            $parsed = strtotime("$today $simulate_time");
+            if ($parsed === false) {
+                $parsed = strtotime("$today $simulate_time:00");
+            }
+            if ($parsed !== false) {
+                $cutoff_ts = $parsed;
+                $time_label = date('h:i A', $cutoff_ts);
+            }
+        }
     }
 
     try {
@@ -82,14 +101,20 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
 
         $pdo->beginTransaction();
 
-        $token_counters = [1 => 0, 2 => 0, 3 => 0];
+        $token_counters = [];
+        $waiting_depth = [];
+        $doctor_in_prog = [];
+        foreach ($doc_map as $sp => $did) {
+            $token_counters[$did] = 0;
+            $waiting_depth[$did] = 0;
+            $doctor_in_prog[$did] = null;
+        }
+
         $booking_counter = 0;
-        
         $inserted_count = 0;
         $stats = ['Completed' => 0, 'In-Progress' => 0, 'Waiting' => 0, 'Booked' => 0, 'No-Show' => 0];
 
-        // Group rows so we know in-progress per doctor
-        $doctor_in_prog = [1 => null, 2 => null, 3 => null];
+        $tokens_to_insert = [];
 
         foreach ($lines as $line) {
             $row = str_getcsv($line);
@@ -102,7 +127,7 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
             $dept = trim($row[$col_map['department']] ?? 'General OPD');
             $booking_type = trim($row[$col_map['booking_type']] ?? 'Walk-in');
             $raw_status = trim($row[$col_map['status']] ?? 'Waiting');
-            $consult_mins = (int)($row[$col_map['consultation_minutes']] ?? 15);
+            $consult_mins = (int)($row[$col_map['consultation_minutes']] ?? ($doc_avg_time[$doc_map[$dept] ?? 1] ?? 15));
             $raw_arrival = trim($row[$col_map['arrival_time']] ?? '');
             $raw_start = trim($row[$col_map['service_start_time']] ?? '');
             $raw_end = trim($row[$col_map['service_end_time']] ?? '');
@@ -127,7 +152,7 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
             $service_start = $map_to_today($raw_start);
             $service_end = $map_to_today($raw_end);
 
-            // Determine status based on cutoff_ts (if simulated time is provided)
+            // Determine status based on cutoff_ts (if simulated time is active)
             $status = $raw_status;
             if ($cutoff_ts) {
                 $arrival_ts = $arrival_time ? strtotime($arrival_time) : null;
@@ -137,16 +162,14 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
                 if ($raw_status === 'Booked') {
                     $status = 'Booked';
                 } elseif ($raw_status === 'No-Show') {
-                    // Only mark No-Show if after the scheduled morning slot
                     $status = ($cutoff_ts >= strtotime("$today 13:00:00")) ? 'No-Show' : 'Booked';
                 } elseif ($end_ts && $cutoff_ts >= $end_ts) {
                     $status = 'Completed';
                 } elseif ($start_ts && $cutoff_ts >= $start_ts && ($end_ts === null || $cutoff_ts < $end_ts)) {
-                    // Currently being served
                     if ($doctor_in_prog[$doctor_id] === null) {
                         $status = 'In-Progress';
                         $doctor_in_prog[$doctor_id] = $patient_id;
-                        $service_end = null; // Still in consultation
+                        $service_end = null; // Active consultation
                     } else {
                         $status = 'Waiting';
                         $service_start = null;
@@ -157,13 +180,7 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
                     $service_start = null;
                     $service_end = null;
                 } else {
-                    // Future appointment not yet arrived
-                    if ($booking_type === 'Pre-Booked') {
-                        $status = 'Booked';
-                    } else {
-                        // Future walk-in not yet in clinic
-                        $status = 'Waiting';
-                    }
+                    $status = ($booking_type === 'Pre-Booked') ? 'Booked' : 'Waiting';
                     $service_start = null;
                     $service_end = null;
                 }
@@ -182,40 +199,85 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
 
             // If checked-in (Waiting, In-Progress, Completed, or Walk-in)
             if ($status !== 'Booked') {
-                $token_counters[$doctor_id]++;
-                $token_number = sprintf("%s-%03d", $spec_prefix[$dept], $token_counters[$doctor_id]);
+                $token_counters[$doctor_id] = ($token_counters[$doctor_id] ?? 0) + 1;
+                $prefix = $spec_prefix[$dept] ?? 'DOC';
+                $token_number = sprintf("%s-%03d", $prefix, $token_counters[$doctor_id]);
                 if (!$arrival_time) $arrival_time = "$today 09:00:00";
             }
 
-            // Default arrival fallback
             if (!$arrival_time) {
                 $arrival_time = "$today " . date('H:i:s');
             }
 
-            // Estimated wait
-            $est_wait = max(5, $consult_mins);
+            // Realistic Dynamic Estimated Wait
+            $avg_m = $doc_avg_time[$doctor_id] ?? 15;
+            if ($status === 'Waiting') {
+                $waiting_depth[$doctor_id] = ($waiting_depth[$doctor_id] ?? 0) + 1;
+                $est_wait = ($waiting_depth[$doctor_id] * $avg_m) + 5;
+            } elseif ($status === 'In-Progress') {
+                $est_wait = max(3, $avg_m - 5);
+            } else {
+                $est_wait = 0;
+            }
 
-            $ins_tok = $pdo->prepare("
-                INSERT INTO queue_tokens 
-                (patient_id, doctor_id, token_number, booking_ref, booking_type, scheduled_time, status, arrival_time, arrival_date, service_start_time, service_end_time, estimated_wait_time)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
+            $tokens_to_insert[] = [
+                'patient_id' => $patient_id,
+                'doctor_id' => $doctor_id,
+                'token_number' => $token_number,
+                'booking_ref' => $booking_ref,
+                'booking_type' => $booking_type,
+                'scheduled_time' => $scheduled_time,
+                'status' => $status,
+                'arrival_time' => $arrival_time,
+                'service_start' => $service_start,
+                'service_end' => $service_end,
+                'est_wait' => $est_wait,
+            ];
+        }
+
+        // Smart ensure: if cutoff time is during clinic hours and a doctor has waiting patients but no In-Progress,
+        // promote the topmost waiting patient so all clinic rooms are active for demo!
+        if ($cutoff_ts) {
+            foreach ($doc_map as $dept_name => $d_id) {
+                if ($doctor_in_prog[$d_id] === null) {
+                    foreach ($tokens_to_insert as &$tok) {
+                        if ($tok['doctor_id'] === $d_id && $tok['status'] === 'Waiting' && !empty($tok['token_number'])) {
+                            $tok['status'] = 'In-Progress';
+                            $tok['service_start'] = date('Y-m-d H:i:s', max($cutoff_ts - (7 * 60), strtotime("$today 09:00:00")));
+                            $tok['service_end'] = null;
+                            $tok['est_wait'] = 5;
+                            $doctor_in_prog[$d_id] = $tok['patient_id'];
+                            break;
+                        }
+                    }
+                    unset($tok);
+                }
+            }
+        }
+
+        // Execute batch insert
+        $ins_tok = $pdo->prepare("
+            INSERT INTO queue_tokens 
+            (patient_id, doctor_id, token_number, booking_ref, booking_type, scheduled_time, status, arrival_time, arrival_date, service_start_time, service_end_time, estimated_wait_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        foreach ($tokens_to_insert as $t) {
             $ins_tok->execute([
-                $patient_id,
-                $doctor_id,
-                $token_number,
-                $booking_ref,
-                $booking_type,
-                $scheduled_time,
-                $status,
-                $arrival_time,
+                $t['patient_id'],
+                $t['doctor_id'],
+                $t['token_number'],
+                $t['booking_ref'],
+                $t['booking_type'],
+                $t['scheduled_time'],
+                $t['status'],
+                $t['arrival_time'],
                 $today,
-                $service_start,
-                $service_end,
-                $est_wait
+                $t['service_start'],
+                $t['service_end'],
+                $t['est_wait']
             ]);
-
-            $stats[$status] = ($stats[$status] ?? 0) + 1;
+            $stats[$t['status']] = ($stats[$t['status']] ?? 0) + 1;
             $inserted_count++;
         }
 
@@ -225,10 +287,25 @@ function seedPatientDataset($pdo, $csv_path = null, $simulate_time = null) {
             'success' => true,
             'count' => $inserted_count,
             'stats' => $stats,
-            'time_anchored' => $simulate_time ?: 'Full Timeline'
+            'time_anchored' => $time_label
         ];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+// CLI direct execution support (e.g. php includes/seeder.php [HH:MM])
+if (php_sapi_name() === 'cli' && basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
+    $time_arg = $argv[1] ?? '11:00';
+    $res = seedPatientDataset($pdo, null, $time_arg);
+    if ($res['success']) {
+        echo "[OK] Successfully seeded " . $res['count'] . " patients from dataset (Time Anchored: " . $res['time_anchored'] . ")\n";
+        foreach ($res['stats'] as $st => $cnt) {
+            echo "   - $st: $cnt\n";
+        }
+    } else {
+        echo "[ERROR] Seeding failed: " . ($res['error'] ?? 'Unknown error') . "\n";
+        exit(1);
     }
 }

@@ -160,105 +160,76 @@ if (!$is_ajax):
     <?php endif; ?>
 
     <?php if ($is_dark): ?>
-    <!-- Dark's Exclusive Demo Simulation Control Studio -->
-    <div class="mb-7 rounded-2xl bg-gradient-to-br from-[#0c1322] via-[#0f172a] to-[#1e1b4b] border border-indigo-500/40 p-6 shadow-2xl relative overflow-hidden text-white">
-        
-        <!-- Glow accent in background -->
-        <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
+    <!-- Dark's Demo Simulation Studio -->
+    <div class="card p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs mb-6 bg-slate-50/50 dark:bg-slate-900/50">
         <!-- Studio Header -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-5 border-b border-indigo-900/60 relative z-10">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3.5 border-b border-slate-200 dark:border-slate-800">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-                    <i class="ph-bold ph-sliders-horizontal text-xl"></i>
+                <div class="w-9 h-9 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                    <i class="ph-bold ph-sliders-horizontal text-lg"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h2 class="text-base sm:text-lg font-black tracking-tight font-display text-white">Dark's Demo Simulation Studio</h2>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-                            SuperAdmin Access
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Dark's Demo Simulation Studio</h3>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border dark:border-indigo-800">
+                            SuperAdmin
                         </span>
                     </div>
-                    <p class="text-xs text-slate-300 mt-0.5">
-                        Interactive clinical simulation injector &mdash; seed realistic patient timeline or reset live queue on demand.
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Interactive clinical simulation &mdash; seed realistic patient timeline or reset live queue for demo.
                     </p>
                 </div>
             </div>
 
-            <!-- Fast Reset / Clear Action -->
-            <form method="POST" onsubmit="return confirm('Reset all active tokens and demo patients for today? (Staff logins and doctors are preserved)');" class="shrink-0">
+            <!-- Clear / Reset Action -->
+            <form method="POST" onsubmit="return confirm('Reset all active tokens and demo patients for today? (Doctors and staff logins remain intact)');" class="shrink-0">
                 <input type="hidden" name="action" value="clear_queue">
-                <button type="submit" class="px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 group">
-                    <i class="ph-bold ph-trash text-sm group-hover:scale-110 transition-transform"></i>
+                <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-semibold transition-colors flex items-center gap-1.5">
+                    <i class="ph-bold ph-trash text-sm"></i>
                     <span>Clear &amp; Reset Queue</span>
                 </button>
             </form>
         </div>
 
-        <!-- Action Grid: Smart Time Seeder & Full Dataset -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-5 relative z-10">
-            
-            <!-- Option 1: Smart Time-Aware Seeding (Anchor to Current Clock or Specific Hour) -->
-            <div class="lg:col-span-8 bg-slate-900/80 rounded-xl p-4.5 border border-indigo-900/50 flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center gap-2">
-                            <i class="ph-bold ph-clock-countdown text-indigo-400 text-base"></i>
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">Smart Time-Aware Simulation</h4>
-                        </div>
-                        <span class="text-[11px] text-indigo-400 font-medium">Auto-anchors In-Progress &amp; Waiting to selected hour</span>
-                    </div>
-                    <p class="text-xs text-slate-400 mb-3.5 leading-relaxed">
-                        Seeds patients with early-morning pre-opening surge (08:45 AM). Patients before the anchor are marked <strong class="text-emerald-400">Completed</strong>, the current turn is set <strong class="text-cyan-400">In-Progress</strong>, and future patients wait in the lounge or pre-booked queue.
-                    </p>
+        <!-- Controls Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 mt-3.5 items-center">
+            <!-- Left: Smart Time-Aware Seeding -->
+            <form method="POST" class="lg:col-span-8 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                <input type="hidden" name="action" value="seed_time_aware">
+                
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap flex items-center gap-1.5 shrink-0">
+                    <i class="ph-bold ph-clock-countdown text-indigo-600 dark:text-indigo-400 text-sm"></i>
+                    Time Anchor:
+                </span>
+                
+                <div class="relative flex-1">
+                    <select name="time_preset" class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500 appearance-none pr-8 cursor-pointer">
+                        <option value="now" selected>Current Real Clock (<?= date('h:i A') ?>) &bull; Dynamic Live</option>
+                        <option value="08:45">08:45 AM &bull; Pre-Clinic Crowd Waiting Surge</option>
+                        <option value="09:30">09:30 AM &bull; Morning Peak (First turns serving)</option>
+                        <option value="11:00">11:00 AM &bull; Mid-Day Showcase (19 Completed, 3 In-Progress)</option>
+                        <option value="12:30">12:30 PM &bull; Morning Shift Wrap-up</option>
+                        <option value="17:15">05:15 PM &bull; Evening OPD Session (Active Now)</option>
+                        <option value="19:00">07:00 PM &bull; Evening Peak Influx</option>
+                    </select>
+                    <i class="ph-bold ph-caret-down text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs"></i>
                 </div>
 
-                <form method="POST" class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
-                    <input type="hidden" name="action" value="seed_time_aware">
-                    
-                    <div class="relative flex-1">
-                        <select name="time_preset" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-semibold focus:outline-none focus:border-indigo-500 appearance-none pr-8 cursor-pointer">
-                            <option value="now" selected>Current Real Clock (<?= date('h:i A') ?>) &bull; Dynamic Live</option>
-                            <option value="08:45">08:45 AM &bull; Pre-Clinic Crowd Waiting Surge</option>
-                            <option value="09:30">09:30 AM &bull; Morning Peak (First turns serving)</option>
-                            <option value="11:00">11:00 AM &bull; Mid-Day Showcase (19 Completed, 2 In-Progress)</option>
-                            <option value="12:30">12:30 PM &bull; Morning Shift Wrap-up</option>
-                            <option value="17:15">05:15 PM &bull; Evening OPD Session (Active Now)</option>
-                            <option value="19:00">07:00 PM &bull; Evening Peak Influx</option>
-                        </select>
-                        <i class="ph-bold ph-caret-down text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs"></i>
-                    </div>
+                <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-xs">
+                    <i class="ph-bold ph-lightning text-xs"></i>
+                    <span>Inject Timeline</span>
+                </button>
+            </form>
 
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/30 flex items-center justify-center gap-1.5 shrink-0">
-                        <i class="ph-bold ph-lightning text-sm"></i>
-                        <span>Inject Timeline</span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- Option 2: Full Dataset Injector -->
-            <div class="lg:col-span-4 bg-slate-900/80 rounded-xl p-4.5 border border-indigo-900/50 flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center gap-2 mb-2">
-                        <i class="ph-bold ph-database text-blue-400 text-base"></i>
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">Full 45-Patient Dataset</h4>
-                    </div>
-                    <p class="text-xs text-slate-400 mb-3.5 leading-relaxed">
-                        Seeds all 45 patients from the clinical CSV dataset (<code class="text-blue-300">careflow_patient_dataset.csv</code>) across all 3 departments.
-                    </p>
-                </div>
-
-                <form method="POST">
-                    <input type="hidden" name="action" value="seed_full">
-                    <button type="submit" class="w-full px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-xs transition-all shadow-md shadow-blue-600/30 flex items-center justify-center gap-1.5">
-                        <i class="ph-bold ph-cloud-arrow-up text-sm"></i>
-                        <span>Seed Full Dataset</span>
-                    </button>
-                </form>
-            </div>
-
+            <!-- Right: Full Dataset -->
+            <form method="POST" class="lg:col-span-4 flex items-center">
+                <input type="hidden" name="action" value="seed_full">
+                <button type="submit" class="w-full px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs">
+                    <i class="ph-bold ph-database text-xs text-indigo-600 dark:text-indigo-400"></i>
+                    <span>Seed Full 45 Patients</span>
+                </button>
+            </form>
         </div>
-
     </div>
     <?php endif; ?>
 

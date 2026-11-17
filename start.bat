@@ -49,5 +49,5 @@ echo Do not close this window while using the app.
 echo.
 
 start http://localhost:8000/login.php
-%PHP_CMD% -d extension=pdo_mysql -S localhost:8000 -t public
+%PHP_CMD% -S localhost:8000 -t public
 pause

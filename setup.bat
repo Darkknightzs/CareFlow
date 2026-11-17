@@ -43,21 +43,21 @@ if %errorlevel% equ 0 net start mysql >nul 2>nul
 
 echo.
 echo Database Setup Initializing...
-%PHP_CMD% -d extension=pdo_mysql setup_db.php
+%PHP_CMD% setup_db.php
 if %errorlevel% neq 0 (
     echo.
     echo ========================================================
     echo ERROR: Could not connect to MySQL!
     echo ========================================================
-    echo Please ensure XAMPP Control Panel is open and MySQL is 'Started'.
+    echo Please ensure XAMPP Control Panel or MySQL service is 'Started'.
     echo Then run this setup again.
     pause
     exit /b
 )
 
 echo.
-echo Seeding dummy data for demonstration...
-%PHP_CMD% -d extension=pdo_mysql seed_dummy.php
+echo Seeding patient dataset for demonstration...
+%PHP_CMD% includes\seeder.php 11:00
 
 echo.
 echo ========================================================
@@ -67,5 +67,5 @@ echo Do not close this window while using the app.
 echo.
 
 start http://localhost:8000/login.php
-%PHP_CMD% -d extension=pdo_mysql -S localhost:8000 -t public
+%PHP_CMD% -S localhost:8000 -t public
 pause

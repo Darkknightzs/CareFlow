@@ -123,15 +123,8 @@ if (!$is_ajax):
             </div>
         </div>
         
-        <div class="flex items-center gap-4 mt-4 md:mt-0 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700">
-            <a href="export.php" target="_blank" class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-semibold text-xs bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 transition-all shadow-xs">
-                <i class="ph-bold ph-download-simple text-sm"></i>
-                <span>Export CSV</span>
-            </a>
-            
-            <div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
-            
-            <div class="text-right px-1">
+        <div class="flex items-center mt-4 md:mt-0 bg-slate-50 dark:bg-slate-800/60 px-4 py-2 rounded-xl border border-slate-200/60 dark:border-slate-700">
+            <div class="text-right">
                 <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Clinic Clock</p>
                 <p class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200" id="live-clock"><?= date('h:i A') ?></p>
             </div>

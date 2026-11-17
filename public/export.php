@@ -2,7 +2,7 @@
 // public/export.php
 require_once '../config/db.php';
 
-if (!isset($_SESSION['user_logged_in']) || !in_array($_SESSION['user_role'], ['Doctor', 'Admin'])) {
+if (!isset($_SESSION['user_logged_in']) || $_SESSION['user_role'] !== 'Admin') {
     header('Location: login.php');
     exit;
 }

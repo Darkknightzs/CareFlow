@@ -118,7 +118,7 @@ if (!$is_ajax):
             </div>
             <div>
                 <h1 class="text-xl font-black font-display tracking-tight text-white flex items-center gap-2">
-                    CareFlow <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-950 text-cyan-400 border border-cyan-800/60 font-semibold normal-case">OPD Live Queue Board</span>
+                    CareFlow
                 </h1>
             </div>
         </div>

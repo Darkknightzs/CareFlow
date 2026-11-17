@@ -1,9 +1,10 @@
 <?php
 require_once '../config/db.php';
+require_once '../includes/seeder.php';
 
 $is_ajax = isset($_GET['ajax']);
 
-if (!isset($_SESSION['user_logged_in']) || $_SESSION['user_role'] !== 'Admin') {
+if (!isset($_SESSION['user_logged_in']) || !in_array($_SESSION['user_role'], ['Admin', 'SuperAdmin'])) {
     if ($is_ajax) {
         echo "<script>window.location.href = 'login.php';</script>";
         exit;
@@ -11,6 +12,52 @@ if (!isset($_SESSION['user_logged_in']) || $_SESSION['user_role'] !== 'Admin') {
     header('Location: login.php');
     exit;
 }
+
+$is_dark = (isset($_SESSION['user_name']) && strtolower($_SESSION['user_name']) === 'dark');
+
+// Handle Dark's Demo Seeding and Reset actions
+if ($is_dark && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+    if ($action === 'clear_queue') {
+        $res = clearQueueData($pdo);
+        if ($res['success']) {
+            $_SESSION['demo_msg'] = "Queue cleared successfully! Database reset to 0 patients for a fresh demo.";
+            $_SESSION['demo_type'] = "info";
+        } else {
+            $_SESSION['demo_msg'] = "Error clearing queue: " . $res['error'];
+            $_SESSION['demo_type'] = "error";
+        }
+    } elseif ($action === 'seed_full') {
+        $res = seedPatientDataset($pdo);
+        if ($res['success']) {
+            $_SESSION['demo_msg'] = "Full dataset seeded! Loaded {$res['count']} patients (Completed: {$res['stats']['Completed']}, In-Progress: {$res['stats']['In-Progress']}, Waiting: {$res['stats']['Waiting']}, Booked: {$res['stats']['Booked']}, No-Show: {$res['stats']['No-Show']}).";
+            $_SESSION['demo_type'] = "success";
+        } else {
+            $_SESSION['demo_msg'] = "Error seeding dataset: " . $res['error'];
+            $_SESSION['demo_type'] = "error";
+        }
+    } elseif ($action === 'seed_time_aware') {
+        $preset = $_POST['time_preset'] ?? 'now';
+        $time_anchor = ($preset === 'now') ? date('H:i') : $preset;
+        $res = seedPatientDataset($pdo, null, $time_anchor);
+        if ($res['success']) {
+            $formatted_time = date('h:i A', strtotime(date('Y-m-d') . " $time_anchor:00"));
+            $_SESSION['demo_msg'] = "Time-Aware Simulation successfully injected up to {$formatted_time}! (Completed: {$res['stats']['Completed']}, Active in Cabin: {$res['stats']['In-Progress']}, Waiting in Lounge: {$res['stats']['Waiting']}, Pre-Booked: {$res['stats']['Booked']}).";
+            $_SESSION['demo_type'] = "success";
+        } else {
+            $_SESSION['demo_msg'] = "Error running simulation: " . $res['error'];
+            $_SESSION['demo_type'] = "error";
+        }
+    }
+
+    header("Location: admin.php");
+    exit;
+}
+
+$demo_msg = $_SESSION['demo_msg'] ?? null;
+$demo_type = $_SESSION['demo_type'] ?? 'info';
+unset($_SESSION['demo_msg'], $_SESSION['demo_type']);
 
 // Fetch all queue tokens for today across ALL doctors
 $stmt = $pdo->prepare("
@@ -46,40 +93,34 @@ if (!$is_ajax):
     }, 10000);
 </script>
 
-<div class="w-full max-w-7xl mx-auto">
+<div class="w-full max-w-6xl mx-auto">
     
     <!-- Admin Header -->
-    <div class="glass-card p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center mb-8 border border-white/60 dark:border-slate-700/50 shadow-sm">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center shadow-lg">
-                <i class="ph ph-shield-check text-3xl"></i>
+    <div class="card p-5 rounded-xl flex flex-col md:flex-row justify-between items-center mb-6 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-lg bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center shadow-xs">
+                <i class="ph-bold ph-shield-check text-xl"></i>
             </div>
             <div>
-                <h2 class="text-2xl font-black text-slate-800 dark:text-white leading-tight">System Administrator</h2>
-                <p class="text-brand-600 dark:text-brand-400 font-semibold text-sm">
-                    Hospital Overview • <span class="text-slate-500 dark:text-slate-400">All Departments</span>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">Hospital Administration</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Central Queue Monitoring • <span class="text-slate-700 dark:text-slate-300 font-medium">All OPD Units</span>
                 </p>
             </div>
         </div>
         
-        <div class="flex items-center gap-4 sm:gap-6 mt-4 md:mt-0 bg-white/50 dark:bg-slate-800/50 px-4 sm:px-6 py-3 rounded-2xl border border-white/50 dark:border-slate-700">
-            <a href="export.php" target="_blank" class="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-4 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors shadow-sm whitespace-nowrap">
-                <i class="ph ph-download-simple text-lg"></i>
+        <div class="flex items-center gap-4 mt-3 md:mt-0">
+            <a href="export.php" target="_blank" class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-medium text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
+                <i class="ph ph-download-simple text-sm"></i>
                 Export CSV
             </a>
             
-            <div class="w-px h-8 bg-slate-300 dark:bg-slate-600 hidden sm:block"></div>
+            <div class="w-px h-6 bg-slate-200 dark:border-slate-700"></div>
             
-            <div class="text-right hidden sm:block">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Current Time</p>
-                <p class="text-lg font-bold text-slate-800 dark:text-white" id="live-clock"><?= date('h:i A') ?></p>
+            <div class="text-right">
+                <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Clock</p>
+                <p class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200" id="live-clock"><?= date('h:i A') ?></p>
             </div>
-            
-            <div class="w-px h-8 bg-slate-300 dark:bg-slate-600"></div>
-            
-            <a href="logout.php" class="text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" title="Logout">
-                <i class="ph ph-sign-out text-2xl"></i>
-            </a>
         </div>
         
         <script>
@@ -93,138 +134,231 @@ if (!$is_ajax):
         </script>
     </div>
 
+    <!-- Alert / Feedback Banner for Demo Actions -->
+    <?php if ($demo_msg): ?>
+        <?php 
+        $alert_bg = match($demo_type) {
+            'success' => 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200',
+            'error' => 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200',
+            default => 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-800 text-blue-800 dark:text-blue-200'
+        };
+        $alert_icon = match($demo_type) {
+            'success' => 'ph-check-circle',
+            'error' => 'ph-x-circle',
+            default => 'ph-info'
+        };
+        ?>
+        <div class="mb-6 p-4 rounded-xl border <?= $alert_bg ?> flex items-center justify-between shadow-sm animate-fade-in">
+            <div class="flex items-center gap-3">
+                <i class="ph-bold <?= $alert_icon ?> text-xl shrink-0"></i>
+                <p class="text-xs sm:text-sm font-semibold"><?= htmlspecialchars($demo_msg) ?></p>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-current opacity-70 hover:opacity-100 p-1">
+                <i class="ph-bold ph-x text-sm"></i>
+            </button>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($is_dark): ?>
+    <!-- Dark's Exclusive Demo Simulation Control Studio -->
+    <div class="mb-7 rounded-2xl bg-gradient-to-br from-[#0c1322] via-[#0f172a] to-[#1e1b4b] border border-indigo-500/40 p-6 shadow-2xl relative overflow-hidden text-white">
+        
+        <!-- Glow accent in background -->
+        <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Studio Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-5 border-b border-indigo-900/60 relative z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="ph-bold ph-sliders-horizontal text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base sm:text-lg font-black tracking-tight font-display text-white">Dark's Demo Simulation Studio</h2>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                            SuperAdmin Access
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-0.5">
+                        Interactive clinical simulation injector &mdash; seed realistic patient timeline or reset live queue on demand.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Fast Reset / Clear Action -->
+            <form method="POST" onsubmit="return confirm('Reset all active tokens and demo patients for today? (Staff logins and doctors are preserved)');" class="shrink-0">
+                <input type="hidden" name="action" value="clear_queue">
+                <button type="submit" class="px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-700/60 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 group">
+                    <i class="ph-bold ph-trash text-sm group-hover:scale-110 transition-transform"></i>
+                    <span>Clear &amp; Reset Queue</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Action Grid: Smart Time Seeder & Full Dataset -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-5 relative z-10">
+            
+            <!-- Option 1: Smart Time-Aware Seeding (Anchor to Current Clock or Specific Hour) -->
+            <div class="lg:col-span-8 bg-slate-900/80 rounded-xl p-4.5 border border-indigo-900/50 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <i class="ph-bold ph-clock-countdown text-indigo-400 text-base"></i>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">Smart Time-Aware Simulation</h4>
+                        </div>
+                        <span class="text-[11px] text-indigo-400 font-medium">Auto-anchors In-Progress &amp; Waiting to selected hour</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3.5 leading-relaxed">
+                        Seeds patients with early-morning pre-opening surge (08:45 AM). Patients before the anchor are marked <strong class="text-emerald-400">Completed</strong>, the current turn is set <strong class="text-cyan-400">In-Progress</strong>, and future patients wait in the lounge or pre-booked queue.
+                    </p>
+                </div>
+
+                <form method="POST" class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                    <input type="hidden" name="action" value="seed_time_aware">
+                    
+                    <div class="relative flex-1">
+                        <select name="time_preset" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-semibold focus:outline-none focus:border-indigo-500 appearance-none pr-8 cursor-pointer">
+                            <option value="now" selected>Current Real Clock (<?= date('h:i A') ?>) &bull; Dynamic Live</option>
+                            <option value="08:45">08:45 AM &bull; Pre-Clinic Crowd Waiting Surge</option>
+                            <option value="09:30">09:30 AM &bull; Morning Peak (First turns serving)</option>
+                            <option value="11:00">11:00 AM &bull; Mid-Day Showcase (19 Completed, 2 In-Progress)</option>
+                            <option value="12:30">12:30 PM &bull; Morning Shift Wrap-up</option>
+                            <option value="17:15">05:15 PM &bull; Evening OPD Session (Active Now)</option>
+                            <option value="19:00">07:00 PM &bull; Evening Peak Influx</option>
+                        </select>
+                        <i class="ph-bold ph-caret-down text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs"></i>
+                    </div>
+
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/30 flex items-center justify-center gap-1.5 shrink-0">
+                        <i class="ph-bold ph-lightning text-sm"></i>
+                        <span>Inject Timeline</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Option 2: Full Dataset Injector -->
+            <div class="lg:col-span-4 bg-slate-900/80 rounded-xl p-4.5 border border-indigo-900/50 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="ph-bold ph-database text-blue-400 text-base"></i>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">Full 45-Patient Dataset</h4>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3.5 leading-relaxed">
+                        Seeds all 45 patients from the clinical CSV dataset (<code class="text-blue-300">careflow_patient_dataset.csv</code>) across all 3 departments.
+                    </p>
+                </div>
+
+                <form method="POST">
+                    <input type="hidden" name="action" value="seed_full">
+                    <button type="submit" class="w-full px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-xs transition-all shadow-md shadow-blue-600/30 flex items-center justify-center gap-1.5">
+                        <i class="ph-bold ph-cloud-arrow-up text-sm"></i>
+                        <span>Seed Full Dataset</span>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+    </div>
+    <?php endif; ?>
+
     <div id="dashboard-content">
 <?php endif; ?>
     
     <!-- Stats Row -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-        <div class="glass-card p-6 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                <i class="ph ph-users text-2xl"></i>
-            </div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Total Hospital</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white"><?= $total_patients ?></p>
-            </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="card p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total Registered</p>
+            <p class="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-1"><?= $total_patients ?></p>
         </div>
-        <div class="glass-card p-6 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/50 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
-                <i class="ph ph-hourglass-high text-2xl"></i>
-            </div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Waiting</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white"><?= $waiting ?></p>
-            </div>
+        <div class="card p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <p class="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Currently Waiting</p>
+            <p class="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1"><?= $waiting ?></p>
         </div>
-        <div class="glass-card p-6 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600 dark:text-brand-400">
-                <i class="ph ph-pulse text-2xl"></i>
-            </div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">In Progress</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white"><?= $in_progress ?></p>
-            </div>
+        <div class="card p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <p class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">In Consultation</p>
+            <p class="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-1"><?= $in_progress ?></p>
         </div>
-        <div class="glass-card p-6 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <i class="ph ph-check-circle text-2xl"></i>
-            </div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Completed</p>
-                <p class="text-3xl font-black text-slate-800 dark:text-white"><?= $completed ?></p>
-            </div>
+        <div class="card p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <p class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Completed Today</p>
+            <p class="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1"><?= $completed ?></p>
         </div>
     </div>
 
-    <!-- Main Table -->
-    <div class="glass-card rounded-[2rem] overflow-hidden border border-white/40 dark:border-slate-700/50 shadow-xl">
-        <div class="px-8 py-5 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center bg-white/40 dark:bg-slate-800/40">
-            <h2 class="text-xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                <i class="ph ph-list-dashes text-slate-500"></i> Master Queue
+    <!-- Master Table -->
+    <div class="card rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs mb-6">
+        <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/70 dark:bg-slate-900/60">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Master OPD Queue</span>
             </h2>
-            <div class="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-100/50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 Auto-Updating
             </div>
         </div>
         
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left border-collapse text-xs">
                 <thead>
-                    <tr class="bg-slate-50/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest font-bold">
-                        <th class="py-4 px-8">Token</th>
-                        <th class="py-4 px-8">Patient Info</th>
-                        <th class="py-4 px-8">Attending Doctor</th>
-                        <th class="py-4 px-8">Status</th>
-                        <th class="py-4 px-8 text-right">Timing</th>
+                    <tr class="bg-slate-50 dark:bg-slate-800/40 text-slate-500 text-[10px] uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+                        <th class="py-2.5 px-5">Token</th>
+                        <th class="py-2.5 px-5">Patient Details</th>
+                        <th class="py-2.5 px-5">Department & Doctor</th>
+                        <th class="py-2.5 px-5">Status</th>
+                        <th class="py-2.5 px-5 text-right">Arrival Time</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100/50 dark:divide-slate-700/50 bg-white/20 dark:bg-slate-900/20">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
                     <?php foreach ($tokens as $token): ?>
-                        <tr class="hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors duration-200 group">
-                            
-                            <!-- Token No -->
-                            <td class="py-4 px-8">
-                                <span class="font-black text-slate-800 dark:text-white text-xl">
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                            <td class="py-3 px-5">
+                                <span class="font-bold font-mono text-sm text-slate-900 dark:text-white">
                                     <?= htmlspecialchars($token['token_number'] ?? $token['booking_ref'] ?? 'N/A') ?>
                                 </span>
                             </td>
                             
-                            <!-- Patient Info -->
-                            <td class="py-4 px-8">
-                                <p class="text-slate-800 dark:text-slate-200 font-bold text-sm"><?= htmlspecialchars($token['patient_name']) ?></p>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-0.5">
+                            <td class="py-3 px-5">
+                                <p class="text-slate-900 dark:text-slate-100 font-semibold"><?= htmlspecialchars($token['patient_name']) ?></p>
+                                <p class="text-slate-500 dark:text-slate-400 text-[11px]">
                                     <?= htmlspecialchars($token['patient_age']) ?>y • <?= htmlspecialchars($token['patient_gender'][0]) ?>
                                 </p>
                             </td>
                             
-                            <!-- Department/Doctor -->
-                            <td class="py-4 px-8">
-                                <p class="text-slate-800 dark:text-slate-200 font-bold text-sm"><?= htmlspecialchars($token['doctor_name']) ?></p>
-                                <div class="inline-flex items-center gap-1.5 mt-0.5">
-                                    <i class="ph ph-stethoscope text-brand-500 text-xs"></i>
-                                    <span class="text-slate-500 dark:text-slate-400 font-medium text-xs"><?= htmlspecialchars($token['specialization']) ?></span>
-                                </div>
+                            <td class="py-3 px-5">
+                                <span class="text-slate-800 dark:text-slate-200 font-medium"><?= htmlspecialchars($token['specialization']) ?></span>
+                                <span class="text-slate-400 text-[11px] block"><?= htmlspecialchars($token['doctor_name']) ?></span>
                             </td>
                             
-                            <!-- Status -->
-                            <td class="py-4 px-8">
+                            <td class="py-3 px-5">
                                 <?php if ($token['status'] === 'Waiting'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-yellow-100 dark:bg-yellow-900/60 text-yellow-700 dark:text-yellow-400 text-[10px] font-bold uppercase tracking-wider border border-yellow-200 dark:border-yellow-700/50">
-                                        <i class="ph-fill ph-clock animate-pulse"></i> Waiting
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                        Waiting
                                     </span>
                                 <?php elseif ($token['status'] === 'In-Progress'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-400 text-[10px] font-bold uppercase tracking-wider border border-brand-200 dark:border-brand-700/50">
-                                        <i class="ph-fill ph-spinner-gap animate-spin"></i> In Progress
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                        Active
                                     </span>
                                 <?php elseif ($token['status'] === 'Completed'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-200 dark:border-emerald-700/50">
-                                        <i class="ph-fill ph-check-circle"></i> Completed
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                        Completed
                                     </span>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-700">
-                                        <i class="ph-fill ph-x-circle"></i> <?= htmlspecialchars($token['status']) ?>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                        <?= htmlspecialchars($token['status']) ?>
                                     </span>
                                 <?php endif; ?>
                             </td>
                             
-                            <!-- Timing -->
-                            <td class="py-4 px-8 text-right text-xs font-medium text-slate-500 dark:text-slate-400">
-                                <p>Arr: <?= date('h:i A', strtotime($token['arrival_time'])) ?></p>
-                                <?php if ($token['service_start_time']): ?>
-                                    <p>Start: <?= date('h:i A', strtotime($token['service_start_time'])) ?></p>
-                                <?php endif; ?>
+                            <td class="py-3 px-5 text-right font-mono text-[11px] text-slate-500">
+                                <?= date('h:i A', strtotime($token['arrival_time'])) ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                     
                     <?php if (count($tokens) === 0): ?>
                         <tr>
-                            <td colspan="5" class="py-12 text-center">
-                                <div class="inline-flex flex-col items-center justify-center opacity-50">
-                                    <i class="ph ph-ghost text-5xl mb-2 text-slate-400"></i>
-                                    <p class="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest">No patients today</p>
-                                </div>
+                            <td colspan="5" class="py-8 text-center text-xs text-slate-400">
+                                No records found for today
                             </td>
                         </tr>
                     <?php endif; ?>

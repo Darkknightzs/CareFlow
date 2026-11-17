@@ -19,10 +19,10 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
@@ -42,22 +42,11 @@
                             200: '#bfdbfe',
                             300: '#93c5fd',
                             400: '#60a5fa',
-                            500: '#3b82f6', // Brand Blue
-                            600: '#2563eb', // Brand Blue Dark
+                            500: '#3b82f6',
+                            600: '#2563eb',
                             700: '#1d4ed8',
                             800: '#1e40af',
                             900: '#1e3a8a',
-                            950: '#172554',
-                        }
-                    },
-                    animation: {
-                        'float': 'float 8s ease-in-out infinite',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    },
-                    keyframes: {
-                        'float': {
-                            '0%, 100%': { transform: 'translate(0, 0)' },
-                            '50%': { transform: 'translate(0, -15px)' },
                         }
                     }
                 }
@@ -67,118 +56,129 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #ebeef0; /* Pearl grayish white */
+            background-color: #f1f5f9; /* Slate 100 base */
+            color: #0f172a;
             position: relative;
+            min-height: 100vh;
         }
         html.dark body {
-            background-color: #0f172a;
+            background-color: #0b0f19; /* Deep midnight */
+            color: #f8fafc;
         }
-        
-        /* Noise Overlay for premium feel */
+
+        /* Subtle Ambient Glows (Fixed, elegant, non-blurry, zero noise) */
         body::before {
             content: '';
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            top: 0;
+            left: 20%;
+            width: 60vw;
+            height: 35vh;
+            background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.12), transparent 70%);
             pointer-events: none;
-            z-index: 9999;
-            opacity: 0.4;
+            z-index: 0;
         }
-        html.dark body::before { opacity: 0.15; }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
-            border-radius: 1.5rem; /* 2xl */
-        }
-        
-        .dark .glass-card {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        html.dark body::before {
+            background: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.18), transparent 75%);
         }
 
-        .glass-nav {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        .glass-card, .card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 10px -6px rgba(15, 23, 42, 0.02);
+            border-radius: 1.125rem; /* 18px */
         }
         
-        .dark .glass-nav {
-            background: rgba(15, 23, 42, 0.7);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        .dark .glass-card, .dark .card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(30, 41, 59, 0.85);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-nav, .app-nav {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        
+        .dark .glass-nav, .dark .app-nav {
+            background: rgba(11, 15, 25, 0.85);
+            border-bottom: 1px solid rgba(30, 41, 59, 0.8);
         }
 
         .form-input { 
             width: 100%; 
-            padding: 0.6rem 1rem 0.6rem 2.5rem; /* Space for icon, reduced padding */
-            border: 2px solid rgba(226, 232, 240, 0.8); 
-            border-radius: 1rem; 
-            background: rgba(255, 255, 255, 0.8);
-            font-size: 1rem; 
-            color: #1e293b;
-            transition: all 0.2s ease;
+            padding: 0.625rem 0.875rem 0.625rem 2.35rem; 
+            border: 1.5px solid #cbd5e1; 
+            border-radius: 0.75rem; 
+            background: #ffffff;
+            font-size: 0.875rem; 
+            color: #0f172a;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
         }
         
         .dark .form-input {
-            background: rgba(15, 23, 42, 0.6);
+            background: #0f172a;
             color: #f8fafc;
-            border: 2px solid rgba(51, 65, 85, 0.8);
+            border: 1.5px solid #334155;
         }
         
         .form-input:focus { 
-            border-color: #3b82f6; 
+            border-color: #2563eb; 
             outline: none; 
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); 
             background: #ffffff;
         }
         
         .dark .form-input:focus {
             border-color: #3b82f6;
-            background: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); 
+            background: #0f172a;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); 
         }
         
         .form-label { 
             font-family: 'Inter', sans-serif;
             font-weight: 700; 
-            font-size: 10px; 
-            color: #64748b; 
+            font-size: 0.6875rem; /* 11px */
+            color: #475569; 
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.5rem;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.4rem;
             display: block;
         }
         
         .dark .form-label { color: #94a3b8; }
 
         .btn-primary { 
-            background: #2563eb;
-            color: white; 
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff; 
             font-weight: 600; 
-            border-radius: 1rem; 
-            transition: all 0.2s ease;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+            border-radius: 0.75rem; 
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.35);
         }
         .btn-primary:hover { 
-            background: #1d4ed8;
-            transform: translateY(-2px);
-            box-shadow: 0 15px 20px -3px rgba(37, 99, 235, 0.4);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 6px 16px -2px rgba(37, 99, 235, 0.45);
+            transform: translateY(-1px);
         }
-        .btn-primary:active { transform: translateY(0); }
+        .btn-primary:active { 
+            transform: translateY(0); 
+            box-shadow: 0 2px 6px -1px rgba(37, 99, 235, 0.3);
+        }
 
         .nav-link {
             font-family: 'Inter', sans-serif;
             font-weight: 600;
             color: #475569;
-            transition: color 0.2s ease;
+            transition: all 0.15s ease;
         }
-        .dark .nav-link { color: #cbd5e1; }
-        .nav-link:hover { color: #2563eb; }
+        .dark .nav-link { color: #94a3b8; }
+        .nav-link:hover { color: #1d4ed8; }
         .dark .nav-link:hover { color: #60a5fa; }
         
         h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', sans-serif; }
@@ -192,7 +192,7 @@
         input[type="number"] { -moz-appearance: textfield; }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col relative overflow-x-hidden text-slate-800 dark:text-slate-200 transition-colors duration-300">
+<body class="antialiased min-h-screen flex flex-col relative overflow-x-hidden text-slate-900 dark:text-slate-100 transition-colors duration-200">
     
     <script>
         function toggleTheme() {
@@ -207,68 +207,67 @@
         }
     </script>
 
-    <!-- Floating background glow blobs (radial-gradient blue/purple) -->
-    <div class="fixed top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-brand-500/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[24px] opacity-60 animate-float pointer-events-none -z-10" style="will-change: transform;"></div>
-    <div class="fixed bottom-[-10%] right-[-5%] w-[35vw] h-[35vw] bg-purple-500/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[24px] opacity-60 animate-float pointer-events-none -z-10" style="animation-delay: 2s; will-change: transform;"></div>
-
-    <nav class="glass-nav relative z-50 transition-colors duration-300">
+    <nav class="app-nav sticky top-0 z-50 transition-colors duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
-                        <i class="ph ph-hospital text-2xl"></i>
+            <div class="flex justify-between items-center h-14 sm:h-15">
+                <!-- Brand Logo & Name -->
+                <a href="index.php" class="flex items-center gap-2.5 group">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform">
+                        <i class="ph-bold ph-heartbeat text-lg"></i>
                     </div>
-                    <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-purple-600 dark:from-brand-400 dark:to-purple-400">
-                        CareFlow
-                    </h1>
-                </div>
-                <div class="flex space-x-6 items-center">
+                    <span class="text-xl font-black tracking-tight text-slate-900 dark:text-white">CareFlow</span>
+                </a>
+
+                <!-- Nav Items -->
+                <div class="flex space-x-5 items-center">
                     <?php if (!isset($_SESSION['user_logged_in'])): ?>
                         <?php if (basename($_SERVER['PHP_SELF']) !== 'book_appointment.php'): ?>
-                            <a href="book_appointment.php" class="nav-link text-sm flex items-center gap-1.5 font-bold text-brand-600 dark:text-brand-400">
-                                <i class="ph ph-calendar-plus text-base"></i> Book Appointment
+                            <a href="book_appointment.php" class="nav-link text-xs sm:text-sm flex items-center gap-1.5 font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200/60 dark:border-blue-900/60 transition-all">
+                                <i class="ph-bold ph-calendar-plus text-base"></i>
+                                <span>Book Appointment</span>
                             </a>
                         <?php endif; ?>
                         <?php if (basename($_SERVER['PHP_SELF']) !== 'lookup.php'): ?>
-                            <a href="lookup.php" class="nav-link text-sm">Patient Lookup</a>
+                            <a href="lookup.php" class="nav-link text-xs sm:text-sm font-semibold">Status Lookup</a>
                         <?php endif; ?>
-                        <a href="display.php" target="_blank" class="nav-link text-sm flex items-center gap-1">Live Display <i class="ph ph-arrow-up-right"></i></a>
+                        <a href="display.php" target="_blank" class="nav-link text-xs sm:text-sm font-semibold flex items-center gap-1">
+                            <span>Waiting Board</span>
+                            <i class="ph-bold ph-arrow-up-right text-xs"></i>
+                        </a>
                     <?php endif; ?>
 
-                    <!-- Theme Toggle (Perfect Round Shape) -->
-                    <button onclick="toggleTheme()" class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-yellow-400 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition-all duration-200 shadow-sm ml-2 focus:outline-none focus:ring-2 focus:ring-brand-500/20" title="Toggle Dark Mode">
-                        <i class="ph ph-moon text-lg hidden dark:block"></i>
-                        <i class="ph ph-sun text-lg block dark:hidden"></i>
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl flex items-center justify-center bg-white dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all shadow-xs" title="Toggle Theme">
+                        <i class="ph-bold ph-moon text-base hidden dark:block"></i>
+                        <i class="ph-bold ph-sun text-base block dark:hidden"></i>
                     </button>
+
                     <?php if (isset($_SESSION['user_logged_in'])): ?>
                         <?php 
                         $role = $_SESSION['user_role'] ?? 'Staff';
                         $pill_classes = match($role) {
-                            'Admin' => 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800/60',
-                            'Doctor' => 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60',
-                            'Receptionist' => 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60',
-                            default => 'bg-brand-100 text-brand-700 border-brand-200 dark:bg-brand-950/60 dark:text-brand-300 dark:border-brand-800/60'
+                            'Admin' => 'bg-purple-100/80 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
+                            'Doctor' => 'bg-blue-100/80 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+                            'Receptionist' => 'bg-emerald-100/80 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+                            default => 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                         };
                         ?>
-                        <div class="flex items-center gap-3 ml-2 pl-4 border-l border-slate-200 dark:border-slate-700">
-                            <!-- Role Pill Badge -->
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-xs tracking-wide <?= $pill_classes ?>">
-                                <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span>
+                        <div class="flex items-center gap-3 ml-2 pl-3 border-l border-slate-200 dark:border-slate-800">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-xs <?= $pill_classes ?>">
+                                <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
                                 <?= htmlspecialchars($role) ?>
                             </span>
-                            <!-- Logout Button (Icon Only) -->
-                            <a href="logout.php" class="text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 p-1.5 rounded-lg transition-all" title="Logout">
-                                <i class="ph ph-sign-out text-lg"></i>
+                            <a href="logout.php" class="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 p-2 rounded-lg transition-colors" title="Logout">
+                                <i class="ph-bold ph-sign-out text-base"></i>
                             </a>
                         </div>
                     <?php elseif (basename($_SERVER['PHP_SELF']) !== 'login.php'): ?>
-                        <!-- Login button (hidden on login page itself) -->
-                        <a href="login.php" class="flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition-colors ml-4 shadow-md shadow-brand-500/20">
-                            <i class="ph ph-sign-in"></i> Staff Login
+                        <a href="login.php" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold transition-all shadow-sm">
+                            <i class="ph-bold ph-lock-key"></i> Staff Portal
                         </a>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
     </nav>
-    <div class="container mx-auto px-4 py-8 relative z-10 flex-1 flex flex-col">
+    <div class="<?= basename($_SERVER['PHP_SELF']) === 'login.php' ? 'container mx-auto px-3 sm:px-4 py-2 sm:py-3 relative z-10 flex-1 flex flex-col justify-center' : 'container mx-auto px-4 py-8 relative z-10 flex-1 flex flex-col' ?>">

@@ -1,0 +1,46 @@
+patient_name,phone,age,gender,department,booking_type,status,consultation_minutes,arrival_time,service_start_time,service_end_time
+Ramesh Kumar,7717211755,46,Male,General OPD,Walk-in,Completed,12,2026-11-11 08:47,2026-11-11 09:00,2026-11-11 09:12
+Simran Kaur,9902501652,27,Female,General OPD,Walk-in,Completed,18,2026-11-11 08:52,2026-11-11 09:12,2026-11-11 09:30
+Aarav Sharma,7928714227,8,Male,General OPD,Walk-in,Completed,10,2026-11-11 09:03,2026-11-11 09:30,2026-11-11 09:40
+Sunita Devi,9600868759,52,Female,General OPD,Walk-in,Completed,15,2026-11-11 09:10,2026-11-11 09:42,2026-11-11 09:57
+Gurpreet Singh,8502683106,38,Male,General OPD,Walk-in,Completed,14,2026-11-11 09:21,2026-11-11 09:57,2026-11-11 10:11
+Rakesh Lamba,7320212633,41,Male,General OPD,Walk-in,Completed,16,2026-11-11 09:33,2026-11-11 10:11,2026-11-11 10:27
+Pooja Gupta,9367606524,33,Female,General OPD,Walk-in,Completed,9,2026-11-11 09:45,2026-11-11 10:27,2026-11-11 10:36
+Harpreet Singh,9096568720,60,Male,General OPD,Pre-Booked,Completed,22,2026-11-11 09:58,2026-11-11 10:38,2026-11-11 11:00
+Neha Chopra,8840957248,29,Female,General OPD,Pre-Booked,Completed,17,2026-11-11 10:16,2026-11-11 11:00,2026-11-11 11:17
+Manpreet Kaur,7742252583,44,Female,General OPD,Walk-in,Completed,13,2026-11-11 10:33,2026-11-11 11:17,2026-11-11 11:30
+Deepak Verma,9291478116,35,Male,General OPD,Pre-Booked,Completed,11,2026-11-11 10:47,2026-11-11 11:30,2026-11-11 11:41
+Kiran Bala,7803959807,67,Female,General OPD,Walk-in,Completed,20,2026-11-11 11:02,2026-11-11 11:43,2026-11-11 12:03
+Amandeep Gill,7687732107,24,Male,General OPD,Walk-in,Completed,19,2026-11-11 11:24,2026-11-11 12:03,2026-11-11 12:22
+Kavita Rani,7425198266,34,Female,General OPD,Walk-in,Completed,15,2026-11-11 11:41,2026-11-11 12:22,2026-11-11 12:37
+Rohit Bansal,9531999541,31,Male,General OPD,Walk-in,Completed,16,2026-11-11 12:03,2026-11-11 12:39,2026-11-11 12:55
+Jaspreet Kaur,8688308904,22,Female,General OPD,Pre-Booked,No-Show,,,,
+Mohit Khanna,9795169156,48,Male,General OPD,Walk-in,In-Progress,,2026-11-11 17:04,2026-11-11 17:12,
+Balwinder Singh,9397673638,55,Male,General OPD,Walk-in,Waiting,,2026-11-11 17:09,,
+Anjali Mittal,8312352206,26,Female,General OPD,Pre-Booked,Waiting,,2026-11-11 17:15,,
+Tejinder Kaur,9200352457,71,Female,General OPD,Walk-in,Waiting,,2026-11-11 17:22,,
+Arjun Mehta,7952440634,17,Male,General OPD,Pre-Booked,Booked,,,,
+Rajni Bhatia,7076904382,58,Female,General OPD,Pre-Booked,Booked,,,,
+Jagdish Prasad,9351148088,63,Male,Cardiology,Walk-in,Completed,18,2026-11-11 09:02,2026-11-11 09:15,2026-11-11 09:33
+Gurleen Sidhu,9609899814,45,Female,Cardiology,Walk-in,Completed,24,2026-11-11 09:08,2026-11-11 09:33,2026-11-11 09:57
+Ashok Aggarwal,9389103972,58,Male,Cardiology,Walk-in,Completed,20,2026-11-11 09:22,2026-11-11 09:59,2026-11-11 10:19
+Ravneet Kaur,7599571295,50,Female,Cardiology,Walk-in,Completed,13,2026-11-11 09:37,2026-11-11 10:19,2026-11-11 10:32
+Vinod Sachdeva,8003049505,66,Male,Cardiology,Pre-Booked,Completed,26,2026-11-11 09:50,2026-11-11 10:34,2026-11-11 11:00
+Shreya Goyal,7015621825,34,Female,Cardiology,Walk-in,Completed,19,2026-11-11 10:12,2026-11-11 11:00,2026-11-11 11:19
+Sukhdev Sandhu,7806532632,61,Male,Cardiology,Walk-in,Completed,22,2026-11-11 10:31,2026-11-11 11:21,2026-11-11 11:43
+Meena Jain,9562370499,55,Female,Cardiology,Walk-in,Completed,17,2026-11-11 10:55,2026-11-11 11:43,2026-11-11 12:00
+Parveen Kumar,9755130224,52,Male,Cardiology,Pre-Booked,No-Show,,,,
+Navjot Singh,8076960826,57,Male,Cardiology,Walk-in,In-Progress,,2026-11-11 17:01,2026-11-11 17:10,
+Sarita Yadav,9528712236,47,Female,Cardiology,Walk-in,Waiting,,2026-11-11 17:18,,
+Harbans Lal,7024980420,74,Male,Cardiology,Pre-Booked,Booked,,,,
+Karan Malhotra,7319147519,30,Male,Orthopedics,Walk-in,Completed,14,2026-11-11 08:58,2026-11-11 09:05,2026-11-11 09:19
+Harjeet Kaur,7595851138,62,Female,Orthopedics,Walk-in,Completed,20,2026-11-11 09:04,2026-11-11 09:21,2026-11-11 09:41
+Vikas Sood,7290366358,42,Male,Orthopedics,Walk-in,Completed,11,2026-11-11 09:26,2026-11-11 09:43,2026-11-11 09:54
+Satnam Singh,7879217141,49,Male,Orthopedics,Walk-in,Completed,17,2026-11-11 09:44,2026-11-11 09:56,2026-11-11 10:13
+Ritika Tandon,8874672173,36,Female,Orthopedics,Pre-Booked,Completed,15,2026-11-11 10:01,2026-11-11 10:15,2026-11-11 10:30
+Anil Dubey,9982843720,39,Male,Orthopedics,Walk-in,Completed,12,2026-11-11 10:22,2026-11-11 10:32,2026-11-11 10:44
+Gurdeep Kaur,9332073568,68,Female,Orthopedics,Walk-in,Completed,18,2026-11-11 11:02,2026-11-11 11:07,2026-11-11 11:25
+Sandeep Ghai,8891919214,45,Male,Orthopedics,Walk-in,Waiting,,2026-11-11 17:08,,
+Manisha Sethi,7474918104,28,Female,Orthopedics,Pre-Booked,Waiting,,2026-11-11 17:17,,
+Paramjit Singh,8195776306,59,Male,Orthopedics,Walk-in,Waiting,,2026-11-11 17:24,,
+Nidhi Kapoor,8866195636,32,Female,Orthopedics,Pre-Booked,Booked,,,,

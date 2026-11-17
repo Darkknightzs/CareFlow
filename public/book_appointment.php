@@ -138,206 +138,165 @@ $doctors = $doctors_stmt->fetchAll();
 include '../includes/header.php';
 ?>
 
-<div class="w-full max-w-4xl mx-auto py-2">
+<div class="w-full max-w-2xl mx-auto py-4">
 
     <?php if ($booking_success): ?>
         <!-- Booking Confirmation Screen -->
-        <div class="glass-card p-6 md:p-10 rounded-3xl shadow-2xl text-center max-w-xl mx-auto">
-            <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4 shadow-inner border border-emerald-200 dark:border-emerald-800/60">
-                <i class="ph-fill ph-check-circle text-4xl"></i>
+        <div class="card p-6 sm:p-8 text-center max-w-lg mx-auto shadow-xs">
+            <div class="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3 border border-emerald-200 dark:border-emerald-800">
+                <i class="ph-bold ph-check text-2xl"></i>
             </div>
             
-            <span class="inline-block py-1 px-3 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] tracking-widest uppercase mb-2">
+            <span class="inline-block py-0.5 px-2.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 mb-1">
                 Appointment Confirmed
             </span>
-            <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Booking Successful!</h2>
-            <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">Your appointment slot has been reserved.</p>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Booking Successful</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Your OPD appointment slot is reserved</p>
 
             <!-- Booking Card -->
-            <div class="bg-gradient-to-br from-brand-50/70 to-white dark:from-slate-800/70 dark:to-slate-900/70 border border-brand-200/80 dark:border-slate-700/80 p-6 rounded-2xl shadow-md my-6 text-left relative overflow-hidden">
-                <div class="flex justify-between items-start border-b border-brand-100 dark:border-slate-700/60 pb-4 mb-4">
+            <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl my-5 text-left">
+                <div class="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-3 mb-3">
                     <div>
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Booking Reference</span>
-                        <span class="text-4xl font-black text-brand-600 dark:text-brand-400 tracking-wider"><?= htmlspecialchars($booking_success['booking_ref']) ?></span>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">Booking Reference</span>
+                        <span class="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400"><?= htmlspecialchars($booking_success['booking_ref']) ?></span>
                     </div>
                     <div class="text-right">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Scheduled Slot</span>
-                        <span class="text-xl font-extrabold text-slate-800 dark:text-white"><?= htmlspecialchars($booking_success['scheduled_time']) ?></span>
-                        <span class="text-[11px] text-slate-500 dark:text-slate-400 block"><?= htmlspecialchars($booking_success['date']) ?></span>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">Scheduled Time</span>
+                        <span class="text-base font-bold text-slate-900 dark:text-white"><?= htmlspecialchars($booking_success['scheduled_time']) ?></span>
+                        <span class="text-xs text-slate-500 block"><?= htmlspecialchars($booking_success['date']) ?></span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                        <span class="text-slate-400 font-bold uppercase text-[9px] block">Patient Name</span>
-                        <span class="font-extrabold text-slate-800 dark:text-slate-200 text-sm"><?= htmlspecialchars($booking_success['patient_name']) ?></span>
+                        <span class="text-slate-400 text-[10px] block uppercase font-medium">Patient</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($booking_success['patient_name']) ?></span>
                     </div>
                     <div>
-                        <span class="text-slate-400 font-bold uppercase text-[9px] block">Registered Phone</span>
-                        <span class="font-bold text-slate-700 dark:text-slate-300"><?= htmlspecialchars($booking_success['phone']) ?></span>
+                        <span class="text-slate-400 text-[10px] block uppercase font-medium">Phone</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($booking_success['phone']) ?></span>
                     </div>
                     <div>
-                        <span class="text-slate-400 font-bold uppercase text-[9px] block">Attending Doctor</span>
-                        <span class="font-bold text-slate-700 dark:text-slate-300"><?= htmlspecialchars($booking_success['doctor_name']) ?></span>
+                        <span class="text-slate-400 text-[10px] block uppercase font-medium">Doctor</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($booking_success['doctor_name']) ?></span>
                     </div>
                     <div>
-                        <span class="text-slate-400 font-bold uppercase text-[9px] block">Department / Room</span>
-                        <span class="font-bold text-slate-700 dark:text-slate-300"><?= htmlspecialchars($booking_success['department']) ?> • <?= htmlspecialchars($booking_success['room_number']) ?></span>
+                        <span class="text-slate-400 text-[10px] block uppercase font-medium">Department</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($booking_success['department']) ?> (<?= htmlspecialchars($booking_success['room_number']) ?>)</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- Reception Arrival Notice -->
-            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-4 rounded-xl text-amber-800 dark:text-amber-200 text-xs text-left mb-6 flex items-start gap-3">
-                <i class="ph-fill ph-info text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"></i>
-                <div>
-                    <p class="font-bold mb-0.5">Next Step at the Hospital:</p>
-                    <p class="leading-relaxed">
-                        Please arrive <strong>10 minutes before</strong> your scheduled slot (<?= htmlspecialchars($booking_success['scheduled_time']) ?>) and show your booking reference <strong><?= htmlspecialchars($booking_success['booking_ref']) ?></strong> or mobile number at the reception desk to convert this booking into a live queue token.
-                    </p>
                 </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="lookup.php?phone=<?= urlencode($booking_success['phone']) ?>&token_number=<?= urlencode($booking_success['booking_ref']) ?>" class="btn-primary py-3 px-6 text-sm flex items-center justify-center gap-2">
-                    <i class="ph ph-magnifying-glass font-bold"></i>
-                    <span>Check Status in Lookup</span>
+            <!-- Reception Notice -->
+            <div class="p-3 rounded-lg bg-blue-50/60 dark:bg-slate-800/80 border border-blue-200/80 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 text-left mb-5">
+                <p class="font-semibold text-slate-900 dark:text-white mb-0.5">Physical Check-in Required:</p>
+                <p>Please arrive 10 minutes prior to your slot and present reference <strong><?= htmlspecialchars($booking_success['booking_ref']) ?></strong> at reception to receive your live queue token.</p>
+            </div>
+
+            <div class="flex gap-2.5 justify-center">
+                <a href="lookup.php?phone=<?= urlencode($booking_success['phone']) ?>&token_number=<?= urlencode($booking_success['booking_ref']) ?>" class="btn-primary py-2 px-4 text-xs flex items-center gap-1.5">
+                    <i class="ph ph-magnifying-glass"></i> Check Status
                 </a>
-                <a href="book_appointment.php" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 px-6 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                    <i class="ph ph-calendar-plus"></i>
-                    <span>Book Another</span>
+                <a href="book_appointment.php" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold py-2 px-4 rounded-lg text-xs transition-colors flex items-center gap-1.5">
+                    <i class="ph ph-plus"></i> Book Another
                 </a>
             </div>
         </div>
 
     <?php else: ?>
         <!-- Booking Form Screen -->
-        <div class="glass-card p-6 md:p-8 rounded-3xl shadow-xl">
-            <div class="mb-6">
-                <span class="inline-block py-1 px-3 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-bold text-[10px] tracking-widest uppercase border border-brand-200 dark:border-brand-700/50 mb-2">
-                    Advance OPD Scheduling
-                </span>
-                <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Book OPD Appointment</h2>
-                <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">
-                    Select a doctor, pick a reserved time slot, and receive a Booking Reference. No password or login required.
+        <div class="card p-6 sm:p-7 shadow-xs">
+            <div class="mb-5">
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Book OPD Appointment</h2>
+                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                    Select a specialist, reserve an appointment slot, and receive an instant booking slip
                 </p>
             </div>
 
             <?php if ($error): ?>
-                <div class="bg-red-50/90 border border-red-200 text-red-700 p-3 mb-6 rounded-xl flex items-start gap-3 text-xs animate-pulse-slow">
-                    <i class="ph-fill ph-warning-circle text-lg flex-shrink-0 mt-0.5"></i>
-                    <p class="font-bold"><?= htmlspecialchars($error) ?></p>
+                <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 p-2.5 mb-4 rounded-lg flex items-center gap-2 text-xs">
+                    <i class="ph-bold ph-warning-circle text-base flex-shrink-0"></i>
+                    <p class="font-medium"><?= htmlspecialchars($error) ?></p>
                 </div>
             <?php endif; ?>
 
-            <form method="POST" id="bookingForm" class="space-y-6">
+            <form method="POST" id="bookingForm" class="space-y-4">
 
                 <!-- Step 1: Select Specialist / Department -->
-                <div class="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
-                    <label for="doctor_id" class="form-label !text-xs !mb-2 flex items-center gap-1.5">
-                        <span class="w-5 h-5 rounded-full bg-brand-600 text-white inline-flex items-center justify-center text-[10px] font-black">1</span>
-                        Select Department & Specialist Doctor
-                    </label>
+                <div>
+                    <label for="doctor_id" class="form-label">1. Specialist Department</label>
                     <div class="relative">
-                        <i class="ph ph-stethoscope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-                        <select id="doctor_id" name="doctor_id" required class="form-input !pl-10 !py-2.5 text-sm appearance-none font-medium" onchange="loadDoctorSlots(this.value)">
-                            <option value="" disabled selected>Choose a department specialist...</option>
+                        <i class="ph ph-stethoscope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <select id="doctor_id" name="doctor_id" required class="form-input appearance-none" onchange="loadDoctorSlots(this.value)">
+                            <option value="" disabled selected>Choose department specialist...</option>
                             <?php foreach ($doctors as $d): ?>
                                 <option value="<?= $d['doctor_id'] ?>" <?= (isset($_POST['doctor_id']) && $_POST['doctor_id'] == $d['doctor_id']) ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($d['specialization']) ?> — <?= htmlspecialchars($d['name']) ?> (<?= htmlspecialchars($d['room_number']) ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                        <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs"></i>
                     </div>
                 </div>
 
                 <!-- Step 2: Slot Selection Container -->
-                <div id="slotsSection" class="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 <?= empty($_POST['doctor_id']) ? 'hidden' : '' ?>">
-                    
-                    <?php if ($is_after_hours): ?>
-                        <div class="bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/60 p-3 rounded-xl mb-3 flex items-center gap-2.5 text-xs text-indigo-800 dark:text-indigo-200">
-                            <i class="ph-fill ph-moon-stars text-xl text-indigo-600 dark:text-indigo-400 flex-shrink-0"></i>
-                            <div>
-                                <span class="font-extrabold block">Today's clinic is closed (OPD hours: 9:00 AM – 1:00 PM & 5:00 PM – 8:00 PM).</span>
-                                <span class="text-[11px]">Booking is now open for <strong>Tomorrow Morning & Evening (<?= date('M d, Y', strtotime('+1 day')) ?>)</strong>.</span>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-                        <label class="form-label !text-xs !mb-0 flex items-center gap-1.5 normal-case font-semibold text-slate-700 dark:text-slate-200">
-                            <span class="w-5 h-5 rounded-full bg-brand-600 text-white inline-flex items-center justify-center text-[10px] font-black">2</span>
-                            Pick Appointment Slot — <span id="slotDateLabel" class="font-black text-brand-600 dark:text-brand-400"><?= ($active_booking_date === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow (' . date('M d, Y', strtotime('+1 day')) . ')' : 'Today (' . date('M d, Y') . ')' ?></span>
-                        </label>
-                        
-                        <div class="flex items-center gap-1.5">
-                            <button type="button" onclick="changeDate('<?= date('Y-m-d') ?>')" id="dateBtnToday" class="date-tab px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border <?= $active_booking_date === date('Y-m-d') ? 'bg-brand-600 text-white border-brand-600 shadow-xs' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-400' ?>">
+                <div id="slotsSection" class="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 <?= empty($_POST['doctor_id']) ? 'hidden' : '' ?>">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="form-label !mb-0">2. Select Time Slot</label>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="changeDate('<?= date('Y-m-d') ?>')" id="dateBtnToday" class="px-2.5 py-1 rounded text-[11px] font-semibold border <?= $active_booking_date === date('Y-m-d') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700' ?>">
                                 Today (<?= date('M d') ?>)
                             </button>
-                            <button type="button" onclick="changeDate('<?= date('Y-m-d', strtotime('+1 day')) ?>')" id="dateBtnTomorrow" class="date-tab px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border <?= $active_booking_date === date('Y-m-d', strtotime('+1 day')) ? 'bg-brand-600 text-white border-brand-600 shadow-xs' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-400' ?>">
+                            <button type="button" onclick="changeDate('<?= date('Y-m-d', strtotime('+1 day')) ?>')" id="dateBtnTomorrow" class="px-2.5 py-1 rounded text-[11px] font-semibold border <?= $active_booking_date === date('Y-m-d', strtotime('+1 day')) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700' ?>">
                                 Tomorrow (<?= date('M d', strtotime('+1 day')) ?>)
                             </button>
                         </div>
                     </div>
 
-                    <!-- Hidden inputs to store chosen date and slot -->
                     <input type="hidden" id="booking_date" name="booking_date" value="<?= htmlspecialchars($active_booking_date) ?>">
                     <input type="hidden" id="slot_time" name="slot_time" value="<?= htmlspecialchars($_POST['slot_time'] ?? '') ?>" required>
 
-                    <!-- Slot loading spinner / container -->
-                    <div id="slotsContainer" class="py-2">
-                        <div class="text-center py-6 text-slate-400 text-xs">
-                            <i class="ph ph-calendar text-3xl mb-1 block"></i>
-                            Select a doctor above to load open slots.
+                    <div id="slotsContainer" class="py-1">
+                        <div class="text-center py-4 text-slate-400 text-xs">
+                            Select a doctor above to load open slots
                         </div>
                     </div>
 
-                    <!-- Clinic OPD Timings Note -->
-                    <div class="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                        <i class="ph ph-clock text-slate-400 text-sm"></i>
-                        <span>OPD Timings: Morning 9:00 AM – 1:00 PM &bull; Evening 5:00 PM – 8:00 PM</span>
+                    <div class="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-400">
+                        OPD Hours: Morning 9:00 AM – 1:00 PM &bull; Evening 5:00 PM – 8:00 PM
                     </div>
                 </div>
 
                 <!-- Step 3: Patient Information -->
-                <div class="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
-                    <label class="form-label !text-xs !mb-3 flex items-center gap-1.5">
-                        <span class="w-5 h-5 rounded-full bg-brand-600 text-white inline-flex items-center justify-center text-[10px] font-black">3</span>
-                        Patient Contact & Demographics
-                    </label>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3 pt-1">
+                    <label class="form-label">3. Patient Details</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label for="name" class="form-label !text-[10px]">Full Name</label>
                             <div class="relative">
-                                <i class="ph ph-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
-                                <input type="text" id="name" name="name" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>" class="form-input !pl-9 !py-2 text-sm" placeholder="e.g. Rahul Sharma">
+                                <i class="ph ph-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                                <input type="text" id="name" name="name" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>" class="form-input" placeholder="Full name">
                             </div>
                         </div>
 
                         <div>
-                            <label for="phone" class="form-label !text-[10px]">Mobile Number (10 Digits)</label>
                             <div class="relative">
-                                <i class="ph ph-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
-                                <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" class="form-input !pl-9 !py-2 text-sm" placeholder="9876543210" title="10 digits">
+                                <i class="ph ph-phone absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                                <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" class="form-input" placeholder="10-digit mobile">
                             </div>
                         </div>
 
                         <div>
-                            <label for="age" class="form-label !text-[10px]">Age</label>
-                            <input type="number" id="age" name="age" min="1" max="150" required value="<?= htmlspecialchars($_POST['age'] ?? '') ?>" class="form-input !pl-4 !py-2 text-sm" placeholder="e.g. 35">
+                            <input type="number" id="age" name="age" min="1" max="150" required value="<?= htmlspecialchars($_POST['age'] ?? '') ?>" class="form-input !pl-3" placeholder="Age (years)">
                         </div>
 
                         <div>
-                            <label for="gender" class="form-label !text-[10px]">Gender</label>
                             <div class="relative">
-                                <select id="gender" name="gender" required class="form-input !pl-4 !py-2 text-sm appearance-none">
-                                    <option value="" disabled selected>Choose gender...</option>
+                                <select id="gender" name="gender" required class="form-input !pl-3 appearance-none">
+                                    <option value="" disabled selected>Select gender</option>
                                     <option value="Male" <?= (isset($_POST['gender']) && $_POST['gender'] === 'Male') ? 'selected' : '' ?>>Male</option>
                                     <option value="Female" <?= (isset($_POST['gender']) && $_POST['gender'] === 'Female') ? 'selected' : '' ?>>Female</option>
                                 </select>
-                                <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                                <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs"></i>
                             </div>
                         </div>
                     </div>
@@ -345,18 +304,17 @@ include '../includes/header.php';
 
                 <!-- Submit Button -->
                 <div class="pt-2">
-                    <button type="submit" id="submitBtn" class="btn-primary w-full py-3 text-sm font-bold flex justify-center items-center gap-2 shadow-lg shadow-brand-500/25">
-                        <i class="ph ph-calendar-check text-lg"></i>
-                        <span>Confirm & Reserve Appointment Slot</span>
+                    <button type="submit" id="submitBtn" class="btn-primary w-full py-2.5 text-xs font-semibold flex justify-center items-center gap-1.5">
+                        <i class="ph-bold ph-calendar-check text-xs"></i>
+                        <span>Confirm Appointment</span>
                     </button>
-                    <p class="text-center text-slate-400 text-[11px] mt-2 font-medium">
-                        Walk-in patients without bookings are also welcomed directly at the reception desk during OPD hours.
+                    <p class="text-center text-slate-400 text-[11px] mt-2">
+                        Walk-in patients without pre-booking are also welcomed directly at reception during OPD hours.
                     </p>
                 </div>
             </form>
         </div>
     <?php endif; ?>
-
 </div>
 
 <script>
@@ -473,11 +431,11 @@ function renderSlotButtons(slotList) {
     return slotList.map(s => {
         const isSelected = selectedSlotTime === s.time_24;
         const btnClass = isSelected
-            ? 'bg-brand-600 text-white font-black border-brand-600 ring-2 ring-brand-400 shadow-md scale-105'
-            : 'bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-slate-700';
+            ? 'bg-blue-600 text-white font-bold border-blue-600 ring-2 ring-blue-300 dark:ring-blue-800 shadow-sm scale-[1.02]'
+            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-700/80';
 
         return `
-            <button type="button" onclick="selectSlot('${s.time_24}', this)" class="slot-btn p-2.5 rounded-xl border text-xs font-bold text-center transition-all ${btnClass}">
+            <button type="button" onclick="selectSlot('${s.time_24}', this)" class="slot-btn py-2 px-1.5 rounded-lg border text-xs font-semibold text-center transition-all ${btnClass}">
                 ${s.time_12}
             </button>
         `;
@@ -490,11 +448,11 @@ function selectSlot(timeStr, btnElem) {
 
     // Remove active styles from all slot buttons
     document.querySelectorAll('.slot-btn').forEach(btn => {
-        btn.className = 'slot-btn p-2.5 rounded-xl border text-xs font-bold text-center transition-all bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-slate-700';
+        btn.className = 'slot-btn py-2 px-1.5 rounded-lg border text-xs font-semibold text-center transition-all bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-700/80';
     });
 
     // Highlight selected button
-    btnElem.className = 'slot-btn p-2.5 rounded-xl border text-xs font-bold text-center transition-all bg-brand-600 text-white font-black border-brand-600 ring-2 ring-brand-400 shadow-md scale-105';
+    btnElem.className = 'slot-btn py-2 px-1.5 rounded-lg border text-xs font-semibold text-center transition-all bg-blue-600 text-white font-bold border-blue-600 ring-2 ring-blue-300 dark:ring-blue-800 shadow-sm scale-[1.02]';
 }
 
 // Auto load if doctor was selected previously (e.g. after form validation error)

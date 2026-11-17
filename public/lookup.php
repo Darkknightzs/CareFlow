@@ -93,129 +93,122 @@ if (!empty($incoming_phone) || !empty($incoming_token)) {
 include '../includes/header.php';
 ?>
 
-<div class="w-full <?= $search_result ? 'max-w-2xl' : 'max-w-md' ?> mx-auto my-auto py-4">
-    <div class="glass-card p-6 md:p-8 rounded-[2rem] shadow-xl">
+<div class="w-full <?= $search_result ? 'max-w-xl' : 'max-w-md' ?> mx-auto my-auto py-8">
+    <div class="card p-7 shadow-lg border border-slate-200/80 dark:border-slate-800">
         
-        <div class="text-center mb-6">
-            <div class="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3 shadow-inner border border-transparent dark:border-slate-700">
-                <i class="ph ph-ticket text-2xl"></i>
+        <div class="flex items-center gap-3.5 mb-6">
+            <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900 shadow-xs">
+                <i class="ph-bold ph-ticket text-xl"></i>
             </div>
-            <h2 class="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">Check Status</h2>
-            <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">Track your live position and wait time in the queue</p>
+            <div>
+                <h2 class="text-xl font-bold font-display text-slate-900 dark:text-white tracking-tight leading-tight">Queue Status Tracker</h2>
+                <p class="text-slate-500 dark:text-slate-400 text-xs">Check your live turn position & estimated wait time</p>
+            </div>
         </div>
         
         <?php if ($error): ?>
-            <div class="bg-red-50/80 border border-red-200 text-red-700 p-3 mb-5 rounded-xl flex items-start gap-2 text-xs animate-pulse-slow">
-                <i class="ph-fill ph-warning-circle text-lg text-red-500 flex-shrink-0"></i>
-                <p class="font-bold"><?= htmlspecialchars($error) ?></p>
+            <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 p-3 mb-5 rounded-xl flex items-center gap-2.5 text-xs">
+                <i class="ph-bold ph-warning-circle text-base flex-shrink-0"></i>
+                <p class="font-medium"><?= htmlspecialchars($error) ?></p>
             </div>
         <?php endif; ?>
 
         <?php if ($search_result): ?>
-            <!-- Horizontal Split Status Card -->
-            <div class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-4 md:p-5 rounded-xl mb-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center shadow-xs">
-                
-                <!-- Left Column: Token / Booking Badge -->
-                <div class="md:col-span-5 bg-white dark:bg-slate-900/90 border border-brand-100 dark:border-slate-700/80 rounded-xl p-4 text-center flex flex-col justify-center items-center shadow-xs">
-                    <?php if ($search_result['status'] === 'Booked'): ?>
-                        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Booking Reference</span>
-                        <span class="text-4xl md:text-5xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight my-1.5"><?= htmlspecialchars($search_result['booking_ref']) ?></span>
-                        <div class="mt-1.5 w-full">
-                            <span class="inline-flex items-center justify-center gap-1 w-full bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
-                                <i class="ph-fill ph-calendar text-xs"></i> Booked
-                            </span>
-                        </div>
-                    <?php else: ?>
-                        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Token Number</span>
-                        <span class="text-4xl md:text-5xl font-black text-brand-600 dark:text-brand-400 tracking-tight my-1.5"><?= htmlspecialchars($search_result['token_number']) ?></span>
-                        <div class="mt-1.5 w-full">
-                            <?php if ($search_result['status'] === 'Waiting'): ?>
-                                <span class="inline-flex items-center justify-center gap-1 w-full bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
-                                    <i class="ph-fill ph-clock text-xs"></i> Waiting
-                                </span>
-                            <?php elseif ($search_result['status'] === 'In-Progress'): ?>
-                                <span class="inline-flex items-center justify-center gap-1 w-full bg-brand-600 text-white font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider animate-pulse">
-                                    <i class="ph-fill ph-check-circle text-xs"></i> It's Your Turn!
-                                </span>
-                            <?php else: ?>
-                                <span class="inline-flex items-center justify-center gap-1 w-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 font-extrabold text-xs py-1.5 px-2 rounded-lg uppercase tracking-wider">
-                                    <?= htmlspecialchars($search_result['status']) ?>
-                                </span>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                
-                <!-- Right Column: Patient & Queue Details -->
-                <div class="md:col-span-7 bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-4 space-y-3 shadow-xs">
-                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <span class="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-wider">Patient</span>
-                        <span class="text-slate-900 dark:text-white font-black text-sm"><?= htmlspecialchars($search_result['patient_name']) ?></span>
+            <!-- Status Card -->
+            <div class="bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl mb-5 space-y-4 shadow-xs">
+                <div class="flex justify-between items-center pb-3.5 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-widest">
+                            <?= $search_result['status'] === 'Booked' ? 'Booking Reference' : 'Queue Token' ?>
+                        </span>
+                        <span class="text-3xl font-black font-mono tracking-tight text-blue-600 dark:text-blue-400">
+                            <?= htmlspecialchars($search_result['status'] === 'Booked' ? $search_result['booking_ref'] : $search_result['token_number']) ?>
+                        </span>
                     </div>
-                    
-                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <span class="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-wider">Department</span>
-                        <span class="text-slate-800 dark:text-slate-200 font-bold text-xs"><?= htmlspecialchars($search_result['department']) ?> • <?= htmlspecialchars($search_result['doctor_name']) ?></span>
-                    </div>
-                    
-                    <?php if ($search_result['status'] === 'Booked'): ?>
-                        <div class="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 p-3 rounded-lg text-center">
-                            <span class="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider block mb-0.5">Scheduled Appointment</span>
-                            <span class="text-2xl font-black text-indigo-900 dark:text-indigo-200"><?= date('h:i A', strtotime($search_result['scheduled_time'])) ?></span>
-                            <span class="text-xs font-extrabold text-indigo-800 dark:text-indigo-300 block mt-0.5">
-                                <?= (date('Y-m-d', strtotime($search_result['scheduled_time'])) === date('Y-m-d', strtotime('+1 day'))) ? 'Tomorrow, ' : '' ?>
-                                <?= date('l, M d, Y', strtotime($search_result['scheduled_time'])) ?>
+                    <div>
+                        <?php if ($search_result['status'] === 'Waiting'): ?>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100/90 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                <i class="ph-bold ph-clock"></i> Waiting
                             </span>
-                            <span class="text-[11px] text-indigo-700 dark:text-indigo-400 block mt-1">Please arrive at least 10 mins before your slot and check in at the reception desk.</span>
-                        </div>
-                    <?php elseif ($search_result['status'] === 'Waiting'): ?>
-                        <div class="grid grid-cols-2 gap-2 pt-0.5">
-                            <div class="bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
-                                <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">Ahead</span>
-                                <span class="text-xl font-black text-slate-900 dark:text-white"><?= $queue_position ?></span>
-                            </div>
-                            <div class="bg-brand-50/80 dark:bg-brand-950/40 p-2.5 rounded-lg border border-brand-200 dark:border-brand-800 text-center">
-                                <span class="text-[9px] font-bold text-brand-700 dark:text-brand-400 uppercase tracking-wider block mb-0.5">Est. Wait</span>
-                                <span class="text-xl font-black text-brand-700 dark:text-brand-300"><?= $search_result['dynamic_wait'] ?>m</span>
-                            </div>
-                        </div>
-                    <?php elseif ($search_result['status'] === 'In-Progress'): ?>
-                        <div class="bg-brand-600 text-white p-3 rounded-lg text-center shadow-sm">
-                            <span class="block text-brand-200 font-bold text-[10px] uppercase tracking-widest">Please proceed to</span>
-                            <span class="block font-black text-lg"><?= htmlspecialchars($search_result['room_number']) ?></span>
-                        </div>
-                    <?php elseif ($search_result['status'] === 'Completed'): ?>
-                        <div class="bg-emerald-50 text-emerald-800 p-3 rounded-lg border border-emerald-200 text-center">
-                            <span class="block font-bold text-sm">Consultation Completed</span>
-                            <span class="block text-[10px] text-emerald-600">Thank you for your visit.</span>
-                        </div>
-                    <?php endif; ?>
+                        <?php elseif ($search_result['status'] === 'In-Progress'): ?>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white animate-pulse shadow-xs">
+                                <i class="ph-bold ph-pulse"></i> Now Serving
+                            </span>
+                        <?php elseif ($search_result['status'] === 'Booked'): ?>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                <i class="ph-bold ph-calendar"></i> Pre-Booked
+                            </span>
+                        <?php else: ?>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                <?= htmlspecialchars($search_result['status']) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
                 </div>
+
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 font-medium">Patient Name:</span>
+                        <span class="font-bold text-slate-900 dark:text-white"><?= htmlspecialchars($search_result['patient_name']) ?></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 font-medium">Department:</span>
+                        <span class="font-bold text-slate-900 dark:text-white"><?= htmlspecialchars($search_result['department']) ?></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 font-medium">Attending Doctor:</span>
+                        <span class="font-bold text-slate-900 dark:text-white"><?= htmlspecialchars($search_result['doctor_name']) ?> (<?= htmlspecialchars($search_result['room_number']) ?>)</span>
+                    </div>
+                </div>
+
+                <?php if ($search_result['status'] === 'Waiting'): ?>
+                    <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                        <div class="bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700 text-center shadow-xs">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Patients Ahead</span>
+                            <span class="text-2xl font-black font-mono text-slate-900 dark:text-white"><?= $queue_position ?></span>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700 text-center shadow-xs">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Estimated Wait</span>
+                            <span class="text-2xl font-black font-mono text-blue-600 dark:text-blue-400"><?= $search_result['dynamic_wait'] ?> mins</span>
+                        </div>
+                    </div>
+                <?php elseif ($search_result['status'] === 'In-Progress'): ?>
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-xl text-center shadow-md">
+                        <span class="block text-xs uppercase font-bold tracking-wider text-blue-100">It's Your Turn Now</span>
+                        <span class="block font-black text-lg mt-0.5">Please proceed to Room <?= htmlspecialchars($search_result['room_number']) ?></span>
+                    </div>
+                <?php elseif ($search_result['status'] === 'Booked'): ?>
+                    <div class="bg-indigo-50/80 dark:bg-indigo-950/40 p-4 rounded-xl text-center border border-indigo-200/80 dark:border-indigo-800 text-xs">
+                        <span class="block text-slate-500 font-medium">Appointment Slot</span>
+                        <span class="block font-bold text-indigo-900 dark:text-indigo-200 text-base mt-0.5"><?= date('h:i A', strtotime($search_result['scheduled_time'])) ?> • <?= date('M d, Y', strtotime($search_result['scheduled_time'])) ?></span>
+                        <span class="text-[11px] text-slate-500 mt-1 block">Please arrive 10 minutes prior and check in at the reception desk to enter the live queue.</span>
+                    </div>
+                <?php endif; ?>
             </div>
             
-            <a href="lookup.php" class="block text-center bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-lg transition-colors shadow-xs">
-                <i class="ph ph-arrow-counter-clockwise mr-1"></i> Check Another Token
+            <a href="lookup.php" class="block text-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs py-2.5 rounded-xl transition-all">
+                <span>Check Another Token</span>
             </a>
         <?php else: ?>
-            <form method="POST" class="space-y-4 text-left">
+            <form method="POST" class="space-y-4">
                 <div>
-                    <label for="phone" class="form-label !text-xs !mb-1.5">Registered Mobile Number</label>
+                    <label for="phone" class="form-label">Registered Phone Number</label>
                     <div class="relative">
-                        <i class="ph ph-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-                        <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" class="form-input !pl-10 !py-2.5 !text-sm" placeholder="9876543210" title="10-digit number">
+                        <i class="ph-bold ph-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" class="form-input" placeholder="10-digit mobile number">
                     </div>
                 </div>
                 <div>
-                    <label for="token_number" class="form-label !text-xs !mb-1.5">Token Number or Booking Reference</label>
+                    <label for="token_number" class="form-label">Or Token / Booking Reference</label>
                     <div class="relative">
-                        <i class="ph ph-ticket absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-                        <input type="text" id="token_number" name="token_number" class="form-input !pl-10 !py-2.5 !text-sm font-bold uppercase" placeholder="e.g. CAR-001 or BK-001 (Optional)">
+                        <i class="ph-bold ph-ticket absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="token_number" name="token_number" class="form-input uppercase font-bold" placeholder="e.g. CAR-001 or BK-001">
                     </div>
                 </div>
                 <div class="pt-2">
-                    <button type="submit" class="w-full btn-primary text-sm !py-2.5 rounded-lg flex justify-center items-center gap-2 shadow-md">
-                        <span>Check Status</span>
-                        <i class="ph ph-arrow-right text-xs"></i>
+                    <button type="submit" class="btn-primary w-full text-xs py-2.5 flex justify-center items-center gap-2 font-bold">
+                        <span>Check Live Position</span>
+                        <i class="ph-bold ph-arrow-right text-xs"></i>
                     </button>
                 </div>
             </form>

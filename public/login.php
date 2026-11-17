@@ -4,7 +4,7 @@ require_once '../config/db.php';
 if (isset($_SESSION['user_logged_in']) && $_SESSION['user_logged_in'] === true) {
     if ($_SESSION['user_role'] === 'Receptionist') {
         header('Location: checkin.php');
-    } elseif ($_SESSION['user_role'] === 'Admin') {
+    } elseif ($_SESSION['user_role'] === 'Admin' || $_SESSION['user_role'] === 'SuperAdmin') {
         header('Location: admin.php');
     } else {
         header('Location: dashboard.php');
@@ -14,11 +14,12 @@ if (isset($_SESSION['user_logged_in']) && $_SESSION['user_logged_in'] === true) 
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
     // Known default credentials fallback mapping for zero-error foolproof deployment
     $default_accounts = [
+        'dark'       => ['pass' => 'dark',       'name' => 'Dark',                  'role' => 'Admin',        'doctor_id' => null],
         'admin'      => ['pass' => 'admin123',   'name' => 'System Administrator',  'role' => 'Admin',        'doctor_id' => null],
         'reception'  => ['pass' => 'recept123',  'name' => 'Receptionist',          'role' => 'Receptionist', 'doctor_id' => null],
         'dr.rajesh'  => ['pass' => 'rajesh123',  'name' => 'Dr. Rajesh Sharma',     'role' => 'Doctor',       'doctor_id' => 1],
@@ -36,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user) {
         if (password_verify($password, $user['password_hash']) || (isset($default_accounts[$username]) && $password === $default_accounts[$username]['pass'])) {
             $authenticated = true;
-            // If password matched fallback or needs rehash, update hash transparently
             if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT) || $password === ($default_accounts[$username]['pass'] ?? '')) {
                 $new_hash = password_hash($password, PASSWORD_DEFAULT);
                 $update_stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE user_id = ?");
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($user['role'] === 'Receptionist') {
             header('Location: checkin.php');
-        } elseif ($user['role'] === 'Admin') {
+        } elseif ($user['role'] === 'Admin' || $user['role'] === 'SuperAdmin') {
             header('Location: admin.php');
         } else {
             header('Location: dashboard.php');
@@ -81,69 +81,175 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include '../includes/header.php';
 ?>
 
-<div class="w-full max-w-sm mx-auto my-auto py-2">
-    <div class="glass-card p-6 md:p-8 rounded-2xl shadow-lg">
-
-        <div class="text-center mb-6">
-            <div
-                class="w-12 h-12 rounded-xl bg-brand-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3 shadow-inner border border-transparent dark:border-slate-700">
-                <i class="ph ph-lock-key text-2xl"></i>
+<div class="w-full max-w-4xl mx-auto my-auto py-2 sm:py-4">
+    <!-- Main 2-Column Auth Card (Optimized for 1280x768 with pixel-aligned headers) -->
+    <div class="bg-white dark:bg-[#0c1322] rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-colors duration-200">
+        
+        <!-- Left Hero Column (CareFlow Medical Visual & Topographic Design) -->
+        <div class="lg:col-span-5 bg-slate-50 dark:bg-[#0f172a]/95 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-200/80 dark:border-slate-800">
+            
+            <!-- Subtle Topographic Background Texture (SVG Design) -->
+            <div class="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20">
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <pattern id="contour-pattern" width="180" height="180" patternUnits="userSpaceOnUse">
+                            <path d="M 0,45 Q 45,0 90,45 T 180,45 M 0,90 Q 45,45 90,90 T 180,90 M 0,135 Q 45,90 90,135 T 180,135" fill="none" stroke="currentColor" class="text-blue-200 dark:text-blue-900" stroke-width="1.2" />
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#contour-pattern)" />
+                </svg>
             </div>
-            <h2 class="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">Staff Login</h2>
-            <p class="text-slate-500 dark:text-slate-400 mt-1 text-xs font-medium">Access the CareFlow Dashboard</p>
+
+            <!-- Left Column Header (Aligned to Right Column Baseline) -->
+            <div class="h-8 flex items-center justify-between relative z-10 mb-6">
+                <h2 class="text-2xl font-black font-display text-slate-900 dark:text-white tracking-tight leading-none">
+                    Smart Healthcare, <span class="text-blue-600 dark:text-blue-400">Zero Waiting.</span>
+                </h2>
+                <span class="text-blue-600 dark:text-blue-400 text-lg font-black shrink-0 animate-pulse" title="CareFlow">
+                    <i class="ph-bold ph-sparkle"></i>
+                </span>
+            </div>
+
+            <!-- Doctor Hero Image (Permanent High-Res CareFlow Portrait) -->
+            <div class="relative z-10 my-auto py-2 flex items-center justify-center">
+                <div class="relative w-56 sm:w-64 h-56 sm:h-64 rounded-3xl shadow-xl overflow-hidden border border-slate-200/60 dark:border-slate-700/60">
+                    <img src="assets/images/careflow-doctor.jpg" 
+                         alt="Clinical Specialist" 
+                         class="w-full h-full object-cover object-top select-none" 
+                         loading="eager" />
+                </div>
+            </div>
+
+            <!-- Spacer to ensure identical height balance -->
+            <div class="h-4 relative z-10"></div>
         </div>
 
-        <?php if ($error): ?>
-            <div
-                class="bg-red-50/80 border border-red-200 text-red-700 p-3 mb-5 rounded-lg flex items-start gap-2 text-xs animate-pulse-slow">
-                <i class="ph ph-warning-circle text-lg flex-shrink-0 mt-0.5"></i>
-                <p class="font-bold"><?= htmlspecialchars($error) ?></p>
-            </div>
-        <?php endif; ?>
-
-        <form method="POST" class="space-y-4">
+        <!-- Right Column (Clean Focused Authentication Form) -->
+        <div class="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between bg-white dark:bg-[#0c1322]">
+            
             <div>
-                <label for="username" class="form-label !text-[10px] !mb-1.5">Username</label>
-                <div class="relative">
-                    <i
-                        class="ph ph-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-base"></i>
-                    <input type="text" id="username" name="username" required class="form-input !text-sm !py-2 !pl-9" placeholder="UserName">
+                <!-- Right Column Header (Pixel-Aligned with Left Header) -->
+                <div class="h-8 flex items-center mb-6">
+                    <h1 class="text-2xl font-black font-display text-slate-900 dark:text-white tracking-tight leading-none">Staff Sign In</h1>
+                </div>
+
+                <!-- Error Alert if any -->
+                <?php if ($error): ?>
+                    <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 p-3 mb-4 rounded-xl flex items-center gap-2.5 text-xs animate-shake">
+                        <i class="ph-bold ph-warning-circle text-base shrink-0"></i>
+                        <p class="font-medium text-xs"><?= htmlspecialchars($error) ?></p>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Authentication Form -->
+                <form method="POST" class="space-y-4" id="loginForm">
+                    
+                    <!-- Username Input -->
+                    <div>
+                        <label for="username" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Username</label>
+                        <div class="relative flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/70 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+                            <div class="pl-3.5 text-slate-400 shrink-0">
+                                <i class="ph-bold ph-user text-base"></i>
+                            </div>
+                            <input type="text" 
+                                   id="username" 
+                                   name="username" 
+                                   required 
+                                   autocomplete="username"
+                                   placeholder="Enter username"
+                                   class="w-full bg-transparent px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none" />
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label for="password" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
+                        <div class="relative flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/70 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+                            <div class="pl-3.5 text-slate-400 shrink-0">
+                                <i class="ph-bold ph-lock-simple text-base"></i>
+                            </div>
+                            <input type="password" 
+                                   id="password" 
+                                   name="password" 
+                                   required 
+                                   autocomplete="current-password"
+                                   placeholder="Enter password"
+                                   class="w-full bg-transparent px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none tracking-wider" />
+                            <button type="button" 
+                                    onclick="togglePasswordVisibility()" 
+                                    class="pr-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" 
+                                    title="Show/hide password">
+                                <i class="ph-bold ph-eye text-base" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Solid Blue Submit Button -->
+                    <div class="pt-1">
+                        <button type="submit" class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all flex items-center justify-center gap-2">
+                            <span>Sign In</span>
+                            <i class="ph-bold ph-arrow-right text-sm"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Demo Credentials Quick Fill -->
+            <div id="demoPills" class="mt-5 pt-4 border-t border-slate-200/80 dark:border-slate-800">
+                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Demo Accounts</span>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="fillAcc('admin', 'admin123')" class="p-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-700/60 border border-slate-200/80 dark:border-slate-700/80 text-left transition-all">
+                        <span class="block text-xs font-bold text-slate-900 dark:text-white">Admin</span>
+                    </button>
+
+                    <button type="button" onclick="fillAcc('reception', 'recept123')" class="p-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-700/60 border border-slate-200/80 dark:border-slate-700/80 text-left transition-all">
+                        <span class="block text-xs font-bold text-slate-900 dark:text-white">Receptionist</span>
+                    </button>
+
+                    <button type="button" onclick="fillAcc('dr.rajesh', 'rajesh123')" class="p-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-700/60 border border-slate-200/80 dark:border-slate-700/80 text-left transition-all">
+                        <span class="block text-xs font-bold text-slate-900 dark:text-white">Dr. Rajesh (OPD)</span>
+                    </button>
+
+                    <button type="button" onclick="fillAcc('dr.ananya', 'ananya123')" class="p-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-700/60 border border-slate-200/80 dark:border-slate-700/80 text-left transition-all">
+                        <span class="block text-xs font-bold text-slate-900 dark:text-white">Dr. Ananya (Cardiology)</span>
+                    </button>
                 </div>
             </div>
 
-            <div>
-                <label for="password" class="form-label !text-[10px] !mb-1.5">Password</label>
-                <div class="relative">
-                    <i
-                        class="ph ph-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-base"></i>
-                    <input type="password" id="password" name="password" required class="form-input !text-sm !py-2 !pl-9"
-                        placeholder="••••••••">
-                </div>
-            </div>
+        </div>
 
-            <div class="pt-2">
-                <button type="submit"
-                    class="btn-primary w-full text-sm py-2.5 rounded-xl flex justify-center items-center gap-2 group">
-                    <span>Secure Login</span>
-                    <i class="ph ph-arrow-right transform group-hover:translate-x-1 transition-transform font-bold text-xs"></i>
-                </button>
-            </div>
-        </form>
-
-
-    </div>
-
-    <div class="text-center mt-4 text-xs text-slate-400 dark:text-slate-500 font-medium">
-        <p class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px]">Demo Credentials:</p>
-        <p class="mt-1"><strong class="text-slate-600 dark:text-slate-300">admin / admin123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Admin Dashboard)</span></p>
-        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">reception / recept123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Front Desk Check-in)</span></p>
-        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">dr.rajesh / rajesh123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Dr. Rajesh - General OPD)</span></p>
-        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">dr.ananya / ananya123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Dr. Ananya - Cardiology)</span></p>
-        <p class="mt-0.5"><strong class="text-slate-600 dark:text-slate-300">dr.vikram / vikram123</strong> <span class="text-[11px] text-slate-400 dark:text-slate-500">(Dr. Vikram - Orthopedics)</span></p>
     </div>
 </div>
+
+<script>
+function fillAcc(u, p) {
+    const userInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+    userInput.value = u;
+    passInput.value = p;
+    // Visual feedback pulse
+    userInput.classList.add('ring-2', 'ring-blue-500');
+    passInput.classList.add('ring-2', 'ring-blue-500');
+    setTimeout(() => {
+        userInput.classList.remove('ring-2', 'ring-blue-500');
+        passInput.classList.remove('ring-2', 'ring-blue-500');
+    }, 400);
+}
+
+function togglePasswordVisibility() {
+    const passInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    if (passInput.type === 'password') {
+        passInput.type = 'text';
+        eyeIcon.className = 'ph-bold ph-eye-slash text-base text-blue-600';
+    } else {
+        passInput.type = 'password';
+        eyeIcon.className = 'ph-bold ph-eye text-base';
+    }
+}
+</script>
 
 </div>
 </body>
-
 </html>

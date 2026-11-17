@@ -100,38 +100,40 @@ if (!$is_ajax):
     }, 10000);
 </script>
 
-<div class="w-full max-w-7xl mx-auto">
+<div class="w-full max-w-6xl mx-auto">
     
-    <!-- Doctor Header -->
-    <div class="glass-card p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center mb-8 border border-white/60 dark:border-slate-700/50">
+    <!-- Doctor Header Card -->
+    <div class="card p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center mb-6 shadow-sm border border-slate-200/80 dark:border-slate-800">
         <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/30">
-                <i class="ph ph-stethoscope text-3xl"></i>
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25 flex-shrink-0">
+                <i class="ph-bold ph-stethoscope text-2xl"></i>
             </div>
             <div>
-                <h2 class="text-2xl font-black text-slate-800 dark:text-white leading-tight"><?= htmlspecialchars($doc_name) ?></h2>
-                <p class="text-brand-600 dark:text-brand-400 font-semibold text-sm">
-                    <?= htmlspecialchars($specialization) ?> • <span class="text-slate-500 dark:text-slate-400"><?= htmlspecialchars($room_number) ?></span>
+                <div class="flex items-center gap-2 mb-0.5">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Cabin Active
+                    </span>
+                    <span class="text-xs text-slate-400 font-medium">•</span>
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400"><?= htmlspecialchars($specialization) ?></span>
+                </div>
+                <h2 class="text-xl font-bold font-display text-slate-900 dark:text-white leading-tight"><?= htmlspecialchars($doc_name) ?></h2>
+                <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-0.5">
+                    Assigned: <span class="text-slate-800 dark:text-slate-200 font-bold"><?= htmlspecialchars($room_number) ?></span>
                 </p>
             </div>
         </div>
         
-        <div class="flex items-center gap-4 sm:gap-6 mt-4 md:mt-0 bg-white/50 dark:bg-slate-800/50 px-4 sm:px-6 py-3 rounded-2xl border border-white/50 dark:border-slate-700">
-            <a href="export.php" target="_blank" class="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-4 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors shadow-sm whitespace-nowrap">
-                <i class="ph ph-download-simple text-lg"></i>
-                Export CSV
+        <div class="flex items-center gap-4 mt-4 md:mt-0 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700">
+            <a href="export.php" target="_blank" class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-semibold text-xs bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 transition-all shadow-xs">
+                <i class="ph-bold ph-download-simple text-sm"></i>
+                <span>Export CSV</span>
             </a>
             
-            <div class="w-px h-8 bg-slate-300 dark:bg-slate-600 hidden sm:block"></div>
+            <div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
             
-            <div class="text-right hidden sm:block">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Current Time</p>
-                <p class="text-lg font-bold text-slate-800 dark:text-white" id="live-clock"><?= date('h:i A') ?></p>
-            </div>
-            <div class="w-px h-8 bg-slate-300 dark:bg-slate-600"></div>
-            <div class="text-left">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Date</p>
-                <p class="text-lg font-bold text-slate-800 dark:text-white"><?= date('M d, Y') ?></p>
+            <div class="text-right px-1">
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Clinic Clock</p>
+                <p class="text-sm font-bold font-mono text-slate-800 dark:text-slate-200" id="live-clock"><?= date('h:i A') ?></p>
             </div>
         </div>
         
@@ -159,202 +161,158 @@ if (!$is_ajax):
     }
     ?>
 
-    <!-- Active Consultation Action Banner -->
-    <div class="glass-card p-6 rounded-[2rem] mb-8 border border-white/60 dark:border-slate-700/50 shadow-lg">
+    <!-- Active Patient Banner (Clinical Priority Card) -->
+    <div class="card p-6 rounded-2xl mb-6 shadow-md border border-slate-200/90 dark:border-slate-800 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-1.5 h-full bg-blue-600"></div>
+        
         <?php if ($current_patient): ?>
-            <div class="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                
+                <!-- Left: Patient Demographics & Token -->
                 <div class="flex items-center gap-5">
-                    <div class="min-w-[5.5rem] px-3 py-3 rounded-2xl bg-brand-600 text-white flex flex-col items-center justify-center shadow-md shadow-brand-500/30 flex-shrink-0">
-                        <span class="text-[9px] font-black uppercase tracking-widest text-brand-200">TOKEN</span>
-                        <span class="text-xl font-black tracking-tight whitespace-nowrap"><?= htmlspecialchars($current_patient['token_number']) ?></span>
+                    <div class="px-4 py-3 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex flex-col items-center justify-center flex-shrink-0 shadow-md shadow-blue-500/25">
+                        <span class="text-[9px] font-black uppercase tracking-widest text-blue-200">NOW SERVING</span>
+                        <span class="text-2xl font-black font-mono tracking-tight"><?= htmlspecialchars($current_patient['token_number']) ?></span>
                     </div>
+
                     <div>
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-brand-100 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 text-[10px] font-extrabold uppercase tracking-wider">
-                                <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span> In Consultation
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100/90 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span> In Consultation
                             </span>
                             <?php if (($current_patient['booking_type'] ?? '') === 'Pre-Booked'): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-[10px] font-extrabold uppercase tracking-wider border border-indigo-200 dark:border-indigo-800">
-                                    <i class="ph ph-calendar-check"></i> Slot: <?= !empty($current_patient['scheduled_time']) ? date('h:i A', strtotime($current_patient['scheduled_time'])) : '' ?>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                    <i class="ph-bold ph-calendar-check"></i> Slot: <?= !empty($current_patient['scheduled_time']) ? date('h:i A', strtotime($current_patient['scheduled_time'])) : '' ?>
                                 </span>
                             <?php endif; ?>
                             <span class="text-xs text-slate-400 font-medium">Started: <?= date('h:i A', strtotime($current_patient['service_start_time'] ?? 'now')) ?></span>
                         </div>
-                        <h3 class="text-2xl font-black text-slate-800 dark:text-white leading-tight"><?= htmlspecialchars($current_patient['patient_name']) ?></h3>
-                        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
-                            <?= htmlspecialchars($current_patient['patient_age']) ?> yrs • <?= htmlspecialchars($current_patient['patient_gender']) ?>
+                        <h3 class="text-xl font-bold font-display text-slate-900 dark:text-white leading-tight"><?= htmlspecialchars($current_patient['patient_name']) ?></h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                            <?= htmlspecialchars($current_patient['patient_age']) ?> years old • <?= htmlspecialchars($current_patient['patient_gender']) ?>
                             <?php if (!empty($current_patient['patient_phone'])): ?>
-                                • <span class="text-slate-400 dark:text-slate-500 font-normal">Phone:</span> <?= htmlspecialchars($current_patient['patient_phone']) ?>
+                                • <span class="font-mono text-slate-600 dark:text-slate-300"><?= htmlspecialchars($current_patient['patient_phone']) ?></span>
                             <?php endif; ?>
                         </p>
                     </div>
                 </div>
 
-                <!-- 1-Click Action Buttons -->
-                <form method="POST" class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+                <!-- Right: Action Buttons -->
+                <form method="POST" class="flex items-center gap-3 w-full lg:w-auto justify-end">
                     <input type="hidden" name="token_id" value="<?= $current_patient['token_id'] ?>">
                     
-                    <!-- Primary: Finish (Auto-Promotes Next) -->
-                    <button type="submit" name="action" value="finish" class="flex-1 sm:flex-initial btn-primary !py-3 !px-6 text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30">
-                        <i class="ph ph-check-circle text-lg font-bold"></i>
-                        <span>Finish</span>
+                    <!-- Finish & Auto Promote -->
+                    <button type="submit" name="action" value="finish" class="btn-primary py-2.5 px-6 text-xs font-bold flex items-center justify-center gap-2 shadow-md">
+                        <i class="ph-bold ph-check-circle text-base"></i>
+                        <span>Finish & Call Next</span>
                     </button>
 
-                    <!-- Secondary: Absent / No-Show (Auto-Promotes Next) -->
-                    <button type="submit" name="action" value="absent" class="bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/60 dark:hover:bg-amber-900/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-bold text-sm py-3 px-5 rounded-2xl transition-all flex items-center gap-2" title="Mark current patient as absent and auto-promote next waiting patient">
-                        <i class="ph ph-user-minus text-base"></i>
-                        <span>Absent</span>
+                    <!-- Absent / No Show -->
+                    <button type="submit" name="action" value="absent" class="bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-bold text-xs py-2.5 px-4 rounded-xl transition-all flex items-center gap-1.5" title="Mark patient absent and auto-promote next">
+                        <i class="ph-bold ph-user-minus text-sm"></i>
+                        <span>No-Show</span>
                     </button>
                 </form>
             </div>
         <?php else: ?>
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 py-2 text-center sm:text-left">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                        <i class="ph ph-user-check text-2xl"></i>
+            <div class="flex items-center justify-between py-2 text-slate-600 dark:text-slate-300 text-xs">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-slate-800 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <i class="ph-bold ph-door text-lg"></i>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Waiting for Patients</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400"><?= $waiting ?> patient(s) waiting in queue • Auto-promotes on check-in</p>
+                        <p class="font-bold text-slate-800 dark:text-white text-sm">Doctor Cabin Ready</p>
+                        <p class="text-slate-500 text-xs">No active consultation. Next checked-in patient will automatically be promoted to your screen.</p>
                     </div>
                 </div>
-                
-                <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl">
-                    <?= $waiting > 0 ? 'Queue Active' : 'No Patients Waiting' ?>
-                </span>
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                    <span class="w-2 h-2 rounded-full <?= $waiting > 0 ? 'bg-amber-500 animate-ping' : 'bg-slate-400' ?>"></span>
+                    <span><?= $waiting ?> waiting outside</span>
+                </div>
             </div>
         <?php endif; ?>
     </div>
 
-    <!-- Single Focused Stat Card: Patients in Queue -->
-    <div class="mb-8">
-        <div class="glass-card p-6 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-6 border border-white/60 dark:border-slate-700/50 shadow-md">
-            <div class="flex items-center gap-5">
-                <div class="w-16 h-16 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shadow-inner">
-                    <i class="ph ph-hourglass-high text-3xl"></i>
-                </div>
-                <div>
-                    <span class="text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 block mb-0.5">Patients In Queue</span>
-                    <div class="flex items-baseline gap-3">
-                        <span class="text-4xl font-black text-slate-800 dark:text-white tracking-tight"><?= $waiting ?></span>
-                        <span class="text-sm font-bold text-slate-500 dark:text-slate-400">waiting for consultation</span>
-                    </div>
-                </div>
+    <!-- Live Queue Table -->
+    <div class="card rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-sm mb-6">
+        <div class="px-6 py-4 border-b border-slate-200/80 dark:border-slate-800 flex justify-between items-center bg-slate-50/60 dark:bg-slate-900/60">
+            <div class="flex items-center gap-2.5">
+                <h2 class="text-sm font-bold font-display text-slate-900 dark:text-white uppercase tracking-wider">Today's Department Queue</h2>
+                <span class="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs font-bold"><?= $total_patients ?> total</span>
             </div>
-            
-            <div class="flex items-center gap-3 bg-slate-100/80 dark:bg-slate-800/80 px-5 py-3 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
-                <span class="w-2.5 h-2.5 rounded-full <?= $waiting > 0 ? 'bg-amber-500 animate-ping' : 'bg-slate-400' ?>"></span>
-                <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    <?= $waiting > 0 ? 'Queue Active' : 'No Pending Patients' ?>
-                </span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Table -->
-    <div class="glass-card rounded-[2rem] overflow-hidden border border-white/40 dark:border-slate-700/50 shadow-xl">
-        <div class="px-8 py-5 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center bg-white/40 dark:bg-slate-800/40">
-            <h2 class="text-xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                <i class="ph ph-list-dashes text-brand-500"></i> Live Queue
-            </h2>
-            <div class="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-100/50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full">
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Auto-Updating
+                <span>Auto-Updating</span>
             </div>
         </div>
         
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left border-collapse text-xs">
                 <thead>
-                    <tr class="bg-slate-50/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest font-bold">
-                        <th class="py-4 px-8">Token</th>
-                        <th class="py-4 px-8">Patient Info</th>
-                        <th class="py-4 px-8">Department</th>
-                        <th class="py-4 px-8">Status</th>
-                        <th class="py-4 px-8 text-right">Actions</th>
+                    <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-[10px] uppercase tracking-wider font-bold border-b border-slate-200 dark:border-slate-800">
+                        <th class="py-3 px-6">Token</th>
+                        <th class="py-3 px-6">Patient Info</th>
+                        <th class="py-3 px-6">Booking Type</th>
+                        <th class="py-3 px-6">Turn Status</th>
+                        <th class="py-3 px-6 text-right">Arrival Time</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100/50 dark:divide-slate-700/50 bg-white/20 dark:bg-slate-900/20">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
                     <?php foreach ($tokens as $token): ?>
-                        <tr class="hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors duration-200 group">
-                            
-                            <!-- Token No & Type Badge -->
-                            <td class="py-4 px-8">
-                                <div class="flex flex-col gap-1 items-start">
-                                    <span class="font-black text-slate-800 dark:text-white text-xl leading-none">
-                                        <?= htmlspecialchars($token['token_number']) ?>
-                                    </span>
-                                    <?php if ($token['booking_type'] === 'Pre-Booked'): ?>
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-[9px] font-black uppercase tracking-wider border border-indigo-200 dark:border-indigo-800/80" title="Pre-Booked for <?= !empty($token['scheduled_time']) ? date('h:i A', strtotime($token['scheduled_time'])) : '' ?>">
-                                            <i class="ph ph-calendar-check text-[10px]"></i> Booked <?= !empty($token['scheduled_time']) ? date('h:i A', strtotime($token['scheduled_time'])) : '' ?>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 text-[9px] font-bold uppercase tracking-wider">
-                                            Walk-in
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                            <td class="py-3.5 px-6">
+                                <span class="font-black font-mono text-base text-slate-900 dark:text-white">
+                                    <?= htmlspecialchars($token['token_number']) ?>
+                                </span>
                             </td>
                             
-                            <!-- Patient Info -->
-                            <td class="py-4 px-8">
-                                <p class="text-slate-800 dark:text-slate-200 font-bold text-sm"><?= htmlspecialchars($token['patient_name']) ?></p>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mt-0.5">
-                                    <?= htmlspecialchars($token['patient_age']) ?>y • <?= htmlspecialchars($token['patient_gender'][0]) ?> • Arr: <?= date('h:i A', strtotime($token['arrival_time'])) ?>
+                            <td class="py-3.5 px-6">
+                                <p class="text-slate-900 dark:text-white font-bold text-sm"><?= htmlspecialchars($token['patient_name']) ?></p>
+                                <p class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">
+                                    <?= htmlspecialchars($token['patient_age']) ?> yrs • <?= htmlspecialchars($token['patient_gender'][0]) ?>
                                 </p>
                             </td>
                             
-                            <!-- Department -->
-                            <td class="py-4 px-8">
-                                <div class="inline-flex items-center gap-2">
-                                    <i class="ph ph-stethoscope text-brand-500"></i>
-                                    <span class="text-slate-600 dark:text-slate-300 font-medium text-sm"><?= htmlspecialchars($token['specialization']) ?></span>
-                                </div>
+                            <td class="py-3.5 px-6">
+                                <?php if ($token['booking_type'] === 'Pre-Booked'): ?>
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                                        <i class="ph-bold ph-calendar text-xs"></i> <?= !empty($token['scheduled_time']) ? date('h:i A', strtotime($token['scheduled_time'])) : 'Booked' ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-[11px] text-slate-500 font-medium">Spot Walk-in</span>
+                                <?php endif; ?>
                             </td>
                             
-                            <!-- Status -->
-                            <td class="py-4 px-8">
+                            <td class="py-3.5 px-6">
                                 <?php if ($token['status'] === 'Waiting'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-yellow-100 dark:bg-yellow-900/60 text-yellow-700 dark:text-yellow-400 text-[10px] font-bold uppercase tracking-wider border border-yellow-200 dark:border-yellow-700/50">
-                                        <i class="ph-fill ph-clock animate-pulse"></i> Waiting
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100/80 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                        <i class="ph-bold ph-clock"></i> Waiting
                                     </span>
                                 <?php elseif ($token['status'] === 'In-Progress'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-400 text-[10px] font-bold uppercase tracking-wider border border-brand-200 dark:border-brand-700/50">
-                                        <i class="ph-fill ph-spinner-gap animate-spin"></i> In Progress
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800 animate-pulse">
+                                        <i class="ph-bold ph-pulse"></i> In Progress
                                     </span>
                                 <?php elseif ($token['status'] === 'Completed'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-200 dark:border-emerald-700/50">
-                                        <i class="ph-fill ph-check-circle"></i> Completed
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100/80 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                        <i class="ph-bold ph-check"></i> Completed
                                     </span>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-700">
-                                        <i class="ph-fill ph-x-circle"></i> <?= htmlspecialchars($token['status']) ?>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                        <?= htmlspecialchars($token['status']) ?>
                                     </span>
                                 <?php endif; ?>
                             </td>
                             
-                            <!-- Actions / Queue Position -->
-                            <td class="py-4 px-8 text-right">
-                                <?php if ($token['status'] === 'Waiting'): ?>
-                                    <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">In Queue</span>
-                                <?php elseif ($token['status'] === 'In-Progress'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 text-xs font-bold border border-brand-200 dark:border-brand-800">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping"></span> Active Now
-                                    </span>
-                                <?php else: ?>
-                                    <span class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Done</span>
-                                <?php endif; ?>
+                            <td class="py-3.5 px-6 text-right font-mono text-[11px] text-slate-500">
+                                <?= date('h:i A', strtotime($token['arrival_time'])) ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                     
                     <?php if (count($tokens) === 0): ?>
                         <tr>
-                            <td colspan="5" class="py-12 text-center">
-                                <div class="inline-flex flex-col items-center justify-center opacity-50">
-                                    <i class="ph ph-ghost text-5xl mb-2 text-slate-400"></i>
-                                    <p class="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest">No patients today</p>
-                                </div>
+                            <td colspan="5" class="py-10 text-center text-xs text-slate-400">
+                                No consultations queued for today
                             </td>
                         </tr>
                     <?php endif; ?>

@@ -57,105 +57,149 @@ if (!$is_ajax):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Queue Display</title>
+    <title>Live OPD Waiting Lounge Billboard — CareFlow</title>
     <!-- CareFlow Custom Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2360a5fa'/%3E%3Cstop offset='100%25' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M16 26h32v26H16z' fill='none' stroke='white' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M24 16h16v10H24z' fill='none' stroke='white' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M32 33v12M26 39h12' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M32 16v32M16 32h32' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
-                    colors: {
-                        brand: { 100: '#dbeafe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb' }
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
                     }
                 }
             }
         }
     </script>
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: #070b14;
+            color: #f8fafc;
+        }
+        .token-glow {
+            text-shadow: 0 0 30px rgba(56, 189, 248, 0.35);
+        }
+        .card-surface {
+            background: rgba(14, 20, 36, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(30, 41, 59, 0.9);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+        }
+    </style>
 </head>
-<body class="bg-slate-900 text-white overflow-hidden">
-
+<body class="bg-[#070b14] text-slate-100 overflow-hidden min-h-screen flex flex-col antialiased">
 
 <script>
-    // Simple fetch polling to prevent full page flash
     setInterval(() => {
         fetch('display.php?ajax=1')
             .then(res => res.text())
             .then(html => {
-                document.getElementById('live-grid').innerHTML = html;
+                const el = document.getElementById('live-grid');
+                if (el) el.innerHTML = html;
             });
     }, 10000);
 </script>
 
 <div class="flex-1 flex flex-col min-h-screen">
     
-    <!-- Full Width Header -->
-    <div class="bg-brand-600 px-8 py-2 flex justify-between items-center shadow-md">
-        <h1 class="text-2xl md:text-3xl font-black tracking-tight uppercase">Live Queue Status</h1>
-        <div class="flex items-baseline gap-3">
-            <p class="text-sm font-medium text-brand-200 hidden sm:block"><?= date('l, M d, Y') ?></p>
-            <p class="text-xl md:text-2xl font-bold text-white tracking-wide" id="clock-display"><?= date('h:i A') ?></p>
+    <!-- Top Hospital Header -->
+    <div class="bg-[#0b1020]/90 border-b border-slate-800/90 px-8 py-3.5 flex justify-between items-center backdrop-blur-md">
+        <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                <i class="ph-bold ph-heartbeat text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black font-display tracking-tight text-white flex items-center gap-2">
+                    CareFlow <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-950 text-cyan-400 border border-cyan-800/60 font-semibold normal-case">OPD Live Queue Board</span>
+                </h1>
+            </div>
+        </div>
+        <div class="flex items-center gap-8">
+            <span class="text-xs font-semibold text-slate-400 tracking-wide uppercase hidden sm:inline"><?= date('l, M d, Y') ?></span>
+            <div class="flex items-center gap-2.5 bg-slate-900/80 px-4 py-1.5 rounded-xl border border-slate-800">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span class="text-xl font-bold font-mono text-cyan-400 tracking-wider" id="clock-display"><?= date('h:i A') ?></span>
+            </div>
         </div>
     </div>
     <script>
         setInterval(() => {
-            document.getElementById('clock-display').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const el = document.getElementById('clock-display');
+            if (el) el.innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }, 1000);
     </script>
     
     <!-- Main Content Area (AJAX Replaced) -->
-    <div id="live-grid" class="flex-1 flex flex-col">
+    <div id="live-grid" class="flex-1 flex flex-col p-6 lg:p-8">
 <?php endif; // End non-AJAX block ?>
 
-        <div class="flex-1 grid grid-cols-<?= count($department_data) > 0 ? count($department_data) : 1 ?> divide-x divide-slate-800">
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-<?= max(1, count($department_data)) ?> gap-6">
             <?php foreach ($department_data as $dept => $data): ?>
-                <div class="flex flex-col">
-                    <!-- Department Title -->
-                    <div class="bg-slate-800 text-center py-4 flex flex-col justify-center items-center gap-1.5 border-b-2 border-slate-900">
-                        <h2 class="text-3xl font-bold text-slate-300 uppercase tracking-widest"><?= htmlspecialchars($dept) ?></h2>
-                        <div class="flex items-center gap-1.5 text-slate-400 bg-slate-900/60 px-3 py-1 rounded-full text-xs font-semibold shadow-inner">
-                            <i class="ph-fill ph-clock text-brand-400"></i>
-                            <span>Avg Wait: <span class="text-white"><?= $data['avg_wait'] ?> mins/patient</span></span>
+                <div class="card-surface rounded-2xl flex flex-col overflow-hidden transition-all">
+                    
+                    <!-- Department Header -->
+                    <div class="px-6 py-4.5 border-b border-slate-800/80 flex justify-between items-center bg-[#0d1326]/60">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-0.5">Department</span>
+                            <h2 class="text-2xl font-black font-display text-white tracking-tight"><?= htmlspecialchars($dept) ?></h2>
+                        </div>
+                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-700/80 text-xs text-slate-300">
+                            <i class="ph-bold ph-clock text-cyan-400"></i>
+                            <span class="font-bold text-white"><?= $data['avg_wait'] ?> min</span>
+                            <span class="text-[10px] text-slate-400 uppercase">avg</span>
                         </div>
                     </div>
                     
-                    <!-- Now Serving -->
-                    <div class="flex-1 flex flex-col items-center justify-center p-6 bg-slate-900 gap-6">
-                        <div>
-                            <span class="bg-brand-600 text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest shadow-lg">Now Serving</span>
-                        </div>
+                    <!-- Now Serving Main Hero -->
+                    <div class="flex-1 flex flex-col items-center justify-center p-6 lg:p-8 bg-[#070b14]/60 w-full overflow-hidden">
+                        <span class="text-xs font-black uppercase tracking-widest text-cyan-400 bg-cyan-950/70 border border-cyan-800/80 px-4 py-1.5 rounded-full mb-4 shadow-sm inline-flex items-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block mr-2 animate-pulse"></span> Now Serving
+                        </span>
                         
                         <?php if ($data['serving']): ?>
-                            <div class="text-center w-full px-2 flex flex-col items-center gap-4">
-                                <p class="text-6xl lg:text-7xl xl:text-[5rem] font-black text-brand-400 leading-none tracking-tighter drop-shadow-[0_0_15px_rgba(59,130,246,0.3)] whitespace-nowrap"><?= htmlspecialchars($data['serving']['token_number']) ?></p>
-                                <p class="text-lg lg:text-xl font-bold text-white bg-brand-600/20 py-2.5 px-6 rounded-xl border border-brand-500/30 inline-block">Please proceed to <?= htmlspecialchars($data['serving']['room_number']) ?></p>
+                            <div class="text-center w-full max-w-full px-2">
+                                <p class="text-4xl sm:text-5xl xl:text-6xl font-black text-cyan-400 tracking-normal font-mono token-glow truncate select-none leading-none my-2">
+                                    <?= htmlspecialchars($data['serving']['token_number']) ?>
+                                </p>
+                                <div class="mt-5 inline-flex items-center gap-2 bg-gradient-to-r from-blue-950/80 to-slate-900/80 border border-blue-800/60 text-slate-100 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md max-w-full">
+                                    <i class="ph-bold ph-door-open text-lg text-cyan-400 shrink-0"></i>
+                                    <span class="truncate">Please proceed to <strong class="text-white font-black uppercase"><?= htmlspecialchars($data['serving']['room_number']) ?></strong></span>
+                                </div>
                             </div>
                         <?php else: ?>
-                            <div class="opacity-40 flex flex-col items-center gap-2">
-                                <i class="ph ph-minus text-5xl"></i>
-                                <p class="text-xl font-bold uppercase">No Patient</p>
+                            <div class="text-center py-8 opacity-40">
+                                <i class="ph ph-stethoscope text-6xl text-slate-500 mb-2"></i>
+                                <p class="text-base font-bold text-slate-400 uppercase tracking-widest font-display">Cabin Ready</p>
                             </div>
                         <?php endif; ?>
                     </div>
                     
-                    <!-- Up Next -->
-                    <div class="bg-slate-800/80 p-5 border-t-4 border-slate-800 flex flex-col justify-center gap-4">
-                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest text-center">Up Next</h3>
+                    <!-- Up Next Section -->
+                    <div class="p-5 border-t border-slate-800/80 bg-[#0b1020]/80">
+                        <div class="flex justify-between items-center mb-3">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Next in Line</p>
+                            <span class="text-[10px] text-slate-500 font-medium">Please be ready</span>
+                        </div>
                         <?php if (count($data['up_next']) > 0): ?>
-                            <div class="flex flex-wrap justify-center gap-4">
+                            <div class="flex items-center gap-3">
                                 <?php foreach ($data['up_next'] as $next): ?>
-                                    <div class="bg-slate-700 px-8 py-4 rounded-xl text-center border-l-4 border-yellow-500 shadow-md">
-                                        <p class="text-4xl font-black text-white"><?= htmlspecialchars($next['token_number']) ?></p>
-                                        <p class="text-xs font-bold text-yellow-500 uppercase mt-1">Waiting</p>
+                                    <div class="flex-1 bg-slate-900/90 border border-amber-500/30 px-5 py-3 rounded-xl flex items-center justify-between shadow-sm">
+                                        <span class="text-2xl font-black font-mono text-amber-400"><?= htmlspecialchars($next['token_number']) ?></span>
+                                        <span class="text-[10px] font-extrabold text-amber-300 uppercase px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-700/60">Waiting</span>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
                         <?php else: ?>
-                            <div class="text-center opacity-50 mt-8">
-                                <p class="text-xl font-bold uppercase">Queue Empty</p>
+                            <div class="py-2.5 text-center text-xs text-slate-500">
+                                No further patients queued
                             </div>
                         <?php endif; ?>
                     </div>
@@ -167,9 +211,13 @@ if (!$is_ajax):
     </div>
     
     <!-- Footer -->
-    <div class="bg-slate-950 px-8 py-4 flex justify-between items-center text-slate-500 font-bold text-lg">
-        <p></p>
-        <p class="flex items-center gap-2"><span class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></span> System Auto-Updating</p>
+    <div class="bg-[#0b1020]/90 border-t border-slate-800/80 px-8 py-3 flex justify-between items-center text-xs text-slate-400">
+        <span class="font-medium flex items-center gap-2">
+            <i class="ph-bold ph-speaker-high text-cyan-400"></i> Turn notifications called automatically via OPD display
+        </span>
+        <span class="flex items-center gap-2 font-semibold">
+            <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> Live Sync Active
+        </span>
     </div>
 </div>
 </body>

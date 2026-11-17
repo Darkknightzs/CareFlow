@@ -27,10 +27,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'dr.vikram'  => ['pass' => 'vikram123',  'name' => 'Dr. Vikram Verma',      'role' => 'Doctor',       'doctor_id' => 3],
     ];
 
-    // Query database for user
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch();
+    // Query database for user with self-healing fallback
+    $user = false;
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), "doesn't exist") !== false || $e->getCode() == '42S02') {
+            if (file_exists(__DIR__ . '/../database/schema.sql')) {
+                $schema_sql = file_get_contents(__DIR__ . '/../database/schema.sql');
+                @$pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+                foreach (array_filter(array_map('trim', explode(';', $schema_sql))) as $q) {
+                    if (!empty($q)) try { $pdo->exec($q); } catch (Exception $ex) {}
+                }
+                @$pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+            }
+            try {
+                $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+                $stmt->execute([$username]);
+                $user = $stmt->fetch();
+            } catch (Exception $ex2) {}
+        }
+    }
 
     $authenticated = false;
 

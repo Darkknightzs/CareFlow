@@ -29,6 +29,12 @@ if ($database_url) {
     }
 }
 
+// Never use MySQL system schemas for application data
+$system_schemas = ['sys', 'information_schema', 'performance_schema', 'mysql'];
+if (empty($dbname) || in_array(strtolower($dbname), $system_schemas)) {
+    $dbname = 'hospital_queue';
+}
+
 // Auto-default TiDB Cloud port to 4000 if not specified
 if (stripos($host, 'tidbcloud.com') !== false && empty($db_parts['port']) && getenv('DB_PORT') === false) {
     $port = '4000';
@@ -43,7 +49,6 @@ if (getenv('DB_PASS') !== false) {
     $passwords_to_try = ['admin', ''];
 }
 
-$dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
 $pdo_options = [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -84,29 +89,51 @@ if ($enable_ssl) {
 
 $pdo = null;
 $last_error = null;
+
+// Connect helper attempting direct dbname, or server root then database creation
 foreach ($passwords_to_try as $pwd) {
+    // 1. Try connecting directly to target database
+    $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
     try {
         $pdo = new PDO($dsn, $user, $pwd, $pdo_options);
-        $password = $pwd;
         break;
     } catch (PDOException $e) {
         $last_error = $e;
+        // If unknown database (1049) or access restricted, try connecting without dbname to create it
+        if ($e->getCode() == 1049 || strpos($e->getMessage(), 'Unknown database') !== false) {
+            $root_dsn = "mysql:host=$host;port=$port;charset=utf8mb4";
+            try {
+                $pdo = new PDO($root_dsn, $user, $pwd, $pdo_options);
+                // Attempt to create database
+                try {
+                    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                    $pdo->exec("USE `$dbname`");
+                } catch (Exception $e_create) {
+                    // Shared cloud fallback: use default user database 'test'
+                    try {
+                        $pdo->exec("USE test");
+                        $dbname = 'test';
+                    } catch (Exception $e_use) {}
+                }
+                break;
+            } catch (PDOException $e_root) {
+                $last_error = $e_root;
+            }
+        }
         if ($e->getCode() != 1045 && strpos($e->getMessage(), 'Access denied') === false) {
             break;
         }
     }
 }
 
-// Fallback: If SSL attempt failed on non-SSL remote host, retry plain
+// Fallback: If SSL attempt failed on non-SSL host, retry plain
 if (!$pdo && $enable_ssl && $env_ssl !== 'true') {
     $plain_options = $pdo_options;
-    unset($plain_options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT]);
-    unset($plain_options[PDO::MYSQL_ATTR_SSL_CA]);
-    unset($plain_options[PDO::MYSQL_ATTR_SSL_CAPATH]);
+    unset($plain_options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT], $plain_options[PDO::MYSQL_ATTR_SSL_CA], $plain_options[PDO::MYSQL_ATTR_SSL_CAPATH]);
     foreach ($passwords_to_try as $pwd) {
+        $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
         try {
             $pdo = new PDO($dsn, $user, $pwd, $plain_options);
-            $password = $pwd;
             break;
         } catch (PDOException $e) {
             $last_error = $e;
@@ -120,19 +147,42 @@ if (!$pdo) {
 
 $GLOBALS['DB_ENGINE'] = 'mysql';
 
-    // Synchronize MySQL connection session to IST (+05:30)
-    @$pdo->exec("SET time_zone = '+05:30'");
+// Synchronize MySQL connection session to IST (+05:30)
+@$pdo->exec("SET time_zone = '+05:30'");
 
-    // Auto-create tables if this is a fresh database
+// Auto-create and populate schema if tables are missing
+$check_tbl = false;
+try {
     $check_tbl = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
-    if (!$check_tbl && file_exists(__DIR__ . '/../database/schema.sql')) {
-        $schema_sql = file_get_contents(__DIR__ . '/../database/schema.sql');
-        try {
-            $pdo->exec($schema_sql);
-        } catch (Exception $e) {
-            // Ignore non-fatal warnings
+} catch (Exception $e) {}
+
+if (!$check_tbl && file_exists(__DIR__ . '/../database/schema.sql')) {
+    $schema_sql = file_get_contents(__DIR__ . '/../database/schema.sql');
+    @$pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+    $statements = array_filter(array_map('trim', explode(';', $schema_sql)));
+    foreach ($statements as $stmt_sql) {
+        if (!empty($stmt_sql)) {
+            try {
+                $pdo->exec($stmt_sql);
+            } catch (Exception $e) {
+                error_log("Schema auto-init error: " . $e->getMessage());
+            }
         }
-    } else {
+    }
+    @$pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+
+    // Auto-seed initial demo dataset
+    if (file_exists(__DIR__ . '/../includes/seeder.php')) {
+        try {
+            require_once __DIR__ . '/../includes/seeder.php';
+            if (function_exists('seedPatientDataset')) {
+                seedPatientDataset($pdo, null, '11:00');
+            }
+        } catch (Exception $e) {
+            error_log("Auto-seeder error: " . $e->getMessage());
+        }
+    }
+} else {
         // Self-heal: ensure appointment booking columns exist in existing databases
         try {
             $has_col = $pdo->query("SHOW COLUMNS FROM queue_tokens LIKE 'booking_type'")->fetch();
